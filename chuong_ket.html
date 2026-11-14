@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chương Kết: Bản Giao Hưởng – "Nốt nhạc của em"</title>
+  <style>
+    :root {
+      --bg-space: #030308;
+      --panel-bg: rgba(10, 8, 20, 0.88);
+      --accent-gold: #ffd166;
+      --accent-orange: #ff7b29;
+      --accent-cyan: #38bdf8;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-glass: rgba(255, 209, 102, 0.28);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-space);
+      color: var(--text-main);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #canvas-container {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+    }
+
+    /* Global Header */
+    .finale-header {
+      position: fixed;
+      top: 18px;
+      left: 20px;
+      right: 20px;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .chapter-badge {
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border-glass);
+      padding: 12px 18px;
+      border-radius: 14px;
+      pointer-events: auto;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .chapter-badge h1 {
+      font-size: 1.15rem;
+      color: var(--accent-gold);
+      margin-bottom: 3px;
+    }
+
+    .chapter-badge p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .battery-pill {
+      background: var(--panel-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid #ef4444;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #fca5a5;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      pointer-events: auto;
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+    }
+
+    .battery-pill .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ef4444;
+      box-shadow: 0 0 8px #ef4444;
+      animation: blink 1s infinite alternate;
+    }
+
+    @keyframes blink {
+      0% { opacity: 0.3; }
+      100% { opacity: 1; }
+    }
+
+    /* Dialogue Box */
+    .dialogue-box {
+      position: fixed;
+      top: 96px;
+      left: 20px;
+      width: min(410px, calc(100vw - 40px));
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-glass);
+      border-radius: 16px;
+      padding: 16px 18px;
+      z-index: 10;
+      box-shadow: 0 14px 40px rgba(0,0,0,0.6);
+    }
+
+    .speaker-tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+
+    .speaker-bit { background: #7c3aed; color: #fff; }
+    .speaker-may { background: #db2777; color: #fff; }
+
+    .dialogue-text {
+      font-size: 0.95rem;
+      line-height: 1.5;
+      color: #f1f5f9;
+      min-height: 44px;
+    }
+
+    .dialogue-controls {
+      margin-top: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .step-indicator {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .btn-next {
+      background: linear-gradient(135deg, var(--accent-orange), #ea580c);
+      color: #fff;
+      border: none;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* Bottom Interactive Audio Mixer & Future Questions Dock */
+    .mixer-dock {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(920px, calc(100vw - 32px));
+      background: var(--panel-bg);
+      backdrop-filter: blur(18px);
+      border: 1px solid var(--border-glass);
+      border-radius: 20px;
+      padding: 18px 24px;
+      z-index: 10;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .mixer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: var(--accent-gold);
+    }
+
+    .stems-sliders {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+
+    @media (max-width: 768px) {
+      .stems-sliders { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    .stem-control {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 8px;
+      text-align: center;
+    }
+
+    .stem-control label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+
+    .stem-control input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 999px;
+      outline: none;
+    }
+
+    .stem-control input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent-gold);
+      cursor: pointer;
+    }
+
+    /* Interactive Future Questions Node */
+    .questions-box {
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding-top: 10px;
+    }
+
+    .q-title {
+      font-size: 0.78rem;
+      color: #38bdf8;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .q-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .q-chip {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #bae6fd;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .q-chip:hover {
+      background: rgba(56, 189, 248, 0.28);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    /* Finale Closing Screen Modal */
+    .overlay-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 3, 10, 0.92);
+      backdrop-filter: blur(12px);
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      transition: opacity 0.5s ease;
+    }
+
+    .overlay-modal.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .modal-card {
+      background: linear-gradient(160deg, #18142c, #0a0814);
+      border: 1px solid var(--accent-gold);
+      border-radius: 24px;
+      max-width: 540px;
+      width: 100%;
+      padding: 30px;
+      text-align: center;
+      box-shadow: 0 30px 70px rgba(0,0,0,0.9);
+    }
+
+    .modal-card h2 {
+      color: var(--accent-gold);
+      font-size: 1.4rem;
+      margin-bottom: 14px;
+      line-height: 1.4;
+    }
+
+    .tagline-box {
+      font-size: 0.95rem;
+      color: #fef08a;
+      line-height: 1.6;
+      font-style: italic;
+      background: rgba(255, 209, 102, 0.08);
+      border: 1px dashed var(--accent-gold);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .actionable-footer {
+      text-align: left;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      background: rgba(0,0,0,0.4);
+      padding: 14px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .actionable-footer div {
+      margin-bottom: 5px;
+    }
+
+    .actionable-footer strong {
+      color: #38bdf8;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #d97706, #fbbf24);
+      color: #000;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(217, 119, 6, 0.4);
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <div id="canvas-container"></div>
+
+  <!-- Finale Closing Modal -->
+  <div class="overlay-modal" id="closing-modal">
+    <div class="modal-card">
+      <div style="font-size: 3rem; margin-bottom: 10px;">🌌✨🛰️</div>
+      <h2>CHƯƠNG KẾT: BẢN GIAO HƯỞNG</h2>
+      <div class="tagline-box">
+        "BỊ BỎ LẠI? KHÔNG.<br>
+        ĐƯỢC NHỚ – MỖI KHI TA HỎI CÂU HỎI TIẾP THEO."
+      </div>
+      <div class="actionable-footer">
+        <div>🚀 <strong>Perseverance:</strong> Đang tìm sự sống ở Jezero.</div>
+        <div>🪐 <strong>Dragonfly (2028):</strong> Sẽ cất cánh trên Titan.</div>
+        <div>🧊 <strong>Europa Clipper:</strong> Đang bay đến mặt trăng băng.</div>
+        <div>🌟 <strong>Bạn:</strong> Cỗ máy tiếp theo... đang đợi tên của bạn.</div>
+      </div>
+      <button class="btn-primary" id="btn-enter-finale">Vào Bản Giao Hưởng Vũ Trụ</button>
+    </div>
+  </div>
+
+  <!-- HUD Header -->
+  <header class="finale-header">
+    <div class="chapter-badge">
+      <h1>CHƯƠNG KẾT: BẢN GIAO HƯỞNG</h1>
+      <p>5 Chòm sao nhạc cụ & Trạm tương lai</p>
+    </div>
+    <div class="battery-pill">
+      <span class="dot"></span>
+      <span>Pin: <strong id="battery-num" style="color: #fff;">3%</strong> (Chế độ tiết kiệm)</span>
+    </div>
+  </header>
+
+  <!-- Story Dialogue Box -->
+  <aside class="dialogue-box">
+    <span class="speaker-tag speaker-bit" id="speaker-tag">BIT</span>
+    <div class="dialogue-text" id="dialogue-text">"3%... Tớ không hoảng! Tớ bật chế độ tiết kiệm pin!" (Bít bung chiếc dù mini hạ cánh an toàn).</div>
+    <div class="dialogue-controls">
+      <span class="step-indicator" id="step-indicator">Thoại 1 / 2</span>
+      <button class="btn-next" id="btn-next-dialogue">Tiếp theo ▸</button>
+    </div>
+  </aside>
+
+  <!-- Interactive Dynamic Audio Mixer & Future Questions Dock -->
+  <section class="mixer-dock">
+    <div class="mixer-header">
+      <span>🎛️ Dynamic Audio Mixer (5 Chòm Sao Nhạc Cụ)</span>
+      <span id="mixer-status" style="font-size: 0.78rem; color: #38bdf8;">Hòa âm đồng bộ: 100%</span>
+    </div>
+
+    <div class="stems-sliders">
+      <div class="stem-control">
+        <label>Đàn Tranh (Cello)</label>
+        <input type="range" min="0" max="100" value="100" oninput="adjustStem('tranh', this.value)" />
+      </div>
+      <div class="stem-control">
+        <label>Sáo Trúc (Flute)</label>
+        <input type="range" min="0" max="100" value="100" oninput="adjustStem('flute', this.value)" />
+      </div>
+      <div class="stem-control">
+        <label>Trống Cơm (Drums)</label>
+        <input type="range" min="0" max="100" value="100" oninput="adjustStem('drums', this.value)" />
+      </div>
+      <div class="stem-control">
+        <label>Đàn Bầu (Piano)</label>
+        <input type="range" min="0" max="100" value="100" oninput="adjustStem('bau', this.value)" />
+      </div>
+      <div class="stem-control">
+        <label>Đàn T'rưng (Harp)</label>
+        <input type="range" min="0" max="100" value="100" oninput="adjustStem('trung', this.value)" />
+      </div>
+    </div>
+
+    <div class="questions-box">
+      <div class="q-title">✨ Bấm chọn 1 Câu Hỏi Tương Lai (Thêm Nốt Nhạc Thứ 6 - Synth Wave):</div>
+      <div class="q-chips">
+        <div class="q-chip" onclick="triggerSynthQuestion('Titan có sự sống không?')">🪐 Titan có sự sống không?</div>
+        <div class="q-chip" onclick="triggerSynthQuestion('Mặt Trăng có là nhà?')">🌕 Mặt Trăng có là nhà?</div>
+        <div class="q-chip" onclick="triggerSynthQuestion('Ai đang lắng nghe ta?')">📡 Ai đang lắng nghe ta?</div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // =========================================================
+    // 1. WEB AUDIO API: 5 STEMS + SYNTH WAVE NODE
+    // =========================================================
+    class FinaleOrchestra {
+      constructor() {
+        this.ctx = null;
+        this.isStarted = false;
+        this.gains = {};
+        this.synthActive = false;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioCtx();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      startOrchestra() {
+        this.init();
+        this.isStarted = true;
+
+        // Tạo kênh Gain cho 5 Stem nhạc cụ
+        const stems = ['tranh', 'flute', 'drums', 'bau', 'trung'];
+        stems.forEach(stem => {
+          const g = this.ctx.createGain();
+          g.gain.value = 0.18; // Mặc định hòa âm 100%
+          g.connect(this.ctx.destination);
+          this.gains[stem] = g;
+        });
+
+        // Vòng lặp phát nhạc nền giao hưởng kết hợp nhạc cụ dân tộc
+        this.playBackgroundLoop();
+      }
+
+      playBackgroundLoop() {
+        if (!this.isStarted) return;
+        const now = this.ctx.currentTime;
+
+        // Phát chuỗi hợp âm rải liên tục
+        const notes = [261.63, 329.63, 392.00, 523.25, 587.33];
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const env = this.ctx.createGain();
+          osc.type = idx % 2 === 0 ? 'triangle' : 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.4);
+
+          env.gain.setValueAtTime(0.001, now + idx * 0.4);
+          env.gain.linearRampToValueAtTime(0.12, now + idx * 0.45);
+          env.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.4 + 0.8);
+
+          osc.connect(env);
+          env.connect(this.gains['tranh']); // Gắn vào stem Đàn Tranh
+
+          osc.start(now + idx * 0.4);
+          osc.stop(now + idx * 0.4 + 0.9);
+        });
+
+        // Lặp lại sau mỗi 2 giây
+        setTimeout(() => {
+          if (this.isStarted) this.playBackgroundLoop();
+        }, 2000);
+      }
+
+      setStemVolume(stemKey, val0to1) {
+        if (this.gains[stemKey]) {
+          this.gains[stemKey].gain.value = val0to1 * 0.25;
+        }
+      }
+
+      // Phát nốt nhạc thứ 6 (Synth Wave) khi chọn câu hỏi tương lai
+      playSynthWaveNode() {
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.8);
+        osc.frequency.exponentialRampToValueAtTime(659.25, now + 1.6);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.3, now + 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 1.9);
+      }
+    }
+
+    const orchestra = new FinaleOrchestra();
+
+    function adjustStem(stem, val) {
+      orchestra.setStemVolume(stem, val / 100);
+    }
+
+    function triggerSynthQuestion(questionText) {
+      orchestra.playSynthWaveNode();
+      if (navigator.vibrate) navigator.vibrate(100);
+      alert(`✨ Câu hỏi: "${questionText}" đã kích hoạt Nốt nhạc thứ 6 (Synth Wave) hòa vào 5 chòm sao nhạc cụ!`);
+    }
+
+    // Modal Events
+    document.getElementById('btn-enter-finale').addEventListener('click', () => {
+      document.getElementById('closing-modal').classList.add('hidden');
+      orchestra.startOrchestra();
+    });
+
+    let dialogueStep = 0;
+    document.getElementById('btn-next-dialogue').addEventListener('click', () => {
+      dialogueStep++;
+      const tag = document.getElementById('speaker-tag');
+      const text = document.getElementById('dialogue-text');
+      const indicator = document.getElementById('step-indicator');
+
+      if (dialogueStep === 1) {
+        tag.textContent = "MAY";
+        tag.className = "speaker-tag speaker-may";
+        text.textContent = `"Hành trình 5 chương thật tuyệt vời! Các chòm sao và giai điệu dân tộc đã dẫn đường cho chúng ta suốt chặng đường dài."`;
+        indicator.textContent = "Thoại 2 / 2";
+      } else {
+        document.querySelector('.dialogue-box').style.display = 'none';
+      }
+    });
+
+    // =========================================================
+    // 2. THREE.JS 3D SCENE: 5 CHÒM SAO NHẠC CỤ & VŨ TRỤ
+    // =========================================================
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x030308);
+
+    // Hàng ngàn ngôi sao lấp lánh nền
+    const starGeo = new THREE.BufferGeometry();
+    const starPos = new Float32Array(2500 * 3);
+    for (let i = 0; i < 2500 * 3; i += 3) {
+      starPos[i] = (Math.random() - 0.5) * 140;
+      starPos[i + 1] = (Math.random() - 0.5) * 140;
+      starPos[i + 2] = (Math.random() - 0.5) * 140;
+    }
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.35, transparent: true, opacity: 0.8 });
+    scene.add(new THREE.Points(starGeo, starMat));
+
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 300);
+    camera.position.set(0, 2.5, 9.5);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+
+    // 5 Cỗ máy hiện diện dưới dạng 5 Chòm sao tỏa sáng
+    const constellations = [];
+    const constColors = [0xff7b29, 0x38bdf8, 0x34d399, 0xa855f7, 0xfbbf24]; // 5 màu tương ứng 5 nhạc cụ
+    const radius = 4.2;
+
+    for (let i = 0; i < 5; i++) {
+      const angle = (i * Math.PI * 2) / 5;
+      const group = new THREE.Group();
+      group.position.set(Math.cos(angle) * radius, Math.sin(angle * 0.8) * 1.2, Math.sin(angle) * radius);
+
+      // Quả cầu đại diện cho chòm sao nhạc cụ
+      const sphere = new THREE.Mesh(
+        new THREE.SphereGeometry(0.45, 24, 24),
+        new THREE.MeshStandardMaterial({
+          color: constColors[i],
+          emissive: constColors[i],
+          emissiveIntensity: 0.8,
+          roughness: 0.2
+        })
+      );
+      group.add(sphere);
+
+      // Các vệ tinh nhỏ xoay quanh chòm sao
+      for (let j = 0; j < 4; j++) {
+        const sat = new THREE.Mesh(
+          new THREE.SphereGeometry(0.08, 12, 12),
+          new THREE.MeshBasicMaterial({ color: 0xffffff })
+        );
+        const satAngle = (j * Math.PI * 2) / 4;
+        sat.position.set(Math.cos(satAngle) * 0.9, 0, Math.sin(satAngle) * 0.9);
+        group.add(sat);
+      }
+
+      scene.add(group);
+      constellations.push(group);
+    }
+
+    // Animation Loop
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const elapsed = clock.getElapsedTime();
+
+      // Xoay toàn bộ hệ thống 5 chòm sao nhẹ nhàng
+      constellations.forEach((c, idx) => {
+        c.rotation.y = elapsed * 0.4 + idx;
+        c.position.y += Math.sin(elapsed * 1.5 + idx) * 0.003;
+      });
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>

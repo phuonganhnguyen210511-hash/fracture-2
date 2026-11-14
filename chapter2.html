@@ -1,0 +1,1423 @@
+backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(251, 191, 36, 0<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chương 2: Ingenuity – "Chỉ một chút nữa thôi!"</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --mars-gold: #f59e0b;
+            --mars-orange: #ea580c;
+            --space-dark: #0f172a;
+        }
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Be Vietnam Pro', sans-serif;
+            background-color: #1c1008;
+            color: #f8fafc;
+        }
+        #canvas-container {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+        }
+        /* Custom Range Sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 10px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        input[type=range]::-webkit-slider-thumb {
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #fbbf24;
+            border: 3px solid #fff;
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -8px;
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.8);
+            transition: transform 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:active {
+            transform: scale(1.2);
+        }
+        /* Glassmorphism Panels */
+        .glass-panel {
+            background: rgba(18, 14, 12, 0.72);.28);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+        }
+        /* Rotor Haptic Visual Micro-shake */
+        @keyframes rotorShake {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(-1.5px, 1px); }
+            50% { transform: translate(1.5px, -1px); }
+            75% { transform: translate(-1px, -1.5px); }
+        }
+        .haptic-vibrate-ui {
+            animation: rotorShake 0.06s infinite linear;
+        }
+        /* Speech Bubble Animation */
+        @keyframes popIn {
+            0% { opacity: 0; transform: translateY(14px) scale(0.96); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .bubble-enter {
+            animation: popIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        /* Floating Golden Feather */
+        @keyframes floatFeather {
+            0%, 100% { transform: translateY(0) rotate(-6deg); }
+            50% { transform: translateY(-8px) rotate(6deg); }
+        }
+        .feather-float {
+            animation: floatFeather 3s ease-in-out infinite;
+        }
+        .mono-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 3D Viewport -->
+    <div id="canvas-container"></div>
+
+    <!-- Top Header HUD -->
+    <header class="fixed top-0 left-0 right-0 z-20 p-3 sm:p-4 flex items-center justify-between pointer-events-none">
+        <div class="glass-panel rounded-2xl px-3.5 py-2 sm:px-5 sm:py-2.5 pointer-events-auto flex items-center gap-3">
+            <span class="flex h-3 w-3 relative">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+            </span>
+            <div>
+                <div class="text-[10px] sm:text-xs uppercase tracking-widest text-amber-400 font-bold">Hố Jezero • Sao Hỏa</div>
+                <h1 class="text-sm sm:text-base font-extrabold text-white leading-tight">CHƯƠNG 2: INGENUITY – <span class="text-amber-300 italic">"Chỉ một chút nữa thôi!"</span></h1>
+            </div>
+        </div>
+
+        <!-- Audio & Haptic Controls -->
+        <div class="flex items-center gap-2 pointer-events-auto">
+            <button id="btn-test-flute" title="Nghe thử tiếng Sáo Trúc Việt Nam" class="glass-panel hover:bg-amber-500/20 active:scale-95 transition rounded-2xl px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-semibold text-amber-200 flex items-center gap-1.5">
+                <span>🎶</span>
+                <span class="hidden sm:inline">Láy Sáo Trúc</span>
+            </button>
+            <button id="btn-toggle-audio" class="glass-panel hover:bg-amber-500/20 active:scale-95 transition rounded-2xl px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-semibold text-white flex items-center gap-1.5">
+                <span id="audio-icon">🔊</span>
+                <span id="audio-label" class="hidden sm:inline">Sáo 140 BPM</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Force Vector Legend (Top Left below header on desktop, compact on mobile) -->
+    <div id="vector-legend" class="fixed top-20 left-3 sm:left-4 z-20 glass-panel rounded-2xl p-3 text-xs space-y-1.5 pointer-events-none hidden">
+        <div class="font-bold text-amber-300 uppercase tracking-wider text-[10px]">Vector Lực 3D (Định luật III Newton)</div>
+        <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-orange-500 inline-block shadow-[0_0_8px_#f97316]"></span>
+            <span><b>F<sub>lift</sub></b>: Lực nâng phản lực (↑)</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-red-600 inline-block shadow-[0_0_8px_#dc2626]"></span>
+            <span><b>P</b>: Trọng lực kéo xuống (↓)</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-amber-200 inline-block"></span>
+            <span><b>v<sub>down</sub></b>: Luồng khí đẩy xuống</span>
+        </div>
+    </div>
+
+    <!-- INTRO OVERLAY -->
+    <div id="intro-overlay" class="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/65 backdrop-blur-md">
+        <div class="glass-panel max-w-lg w-full rounded-3xl p-6 sm:p-8 text-center space-y-5 border-2 border-amber-400/40">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-300 text-xs font-bold tracking-wider uppercase">
+                <span>🚁</span> Nhiệm vụ Khí Động Học Sao Hỏa
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white leading-snug">
+                CHƯƠNG 2: INGENUITY<br>
+                <span class="text-amber-400 text-xl sm:text-2xl">"Chỉ một chút nữa thôi!"</span>
+            </h2>
+            <p class="text-sm sm:text-base text-slate-200 leading-relaxed">
+                Chào mừng đến với lòng chảo cát vàng <b>Hố Jezero</b>! Hãy cùng <b>Bit</b>, <b>Mây</b> và trực thăng <b>Ingenuity</b> chinh phục bầu khí quyển siêu mỏng của Sao Hỏa bằng <b>Định luật III Newton</b> trên nền giai điệu <b>Sáo Trúc Việt Nam 140 BPM</b>.
+            </p>
+            <div class="grid grid-cols-3 gap-2 text-xs text-amber-200/90 bg-black/30 rounded-2xl p-3 border border-white/10">
+                <div>
+                    <div class="font-bold text-white text-sm">1.8 kg</div>
+                    <div>Trên Trái Đất</div>
+                </div>
+                <div class="border-x border-white/10">
+                    <div class="font-bold text-amber-400 text-sm">0.68 kg</div>
+                    <div>Trên Sao Hỏa</div>
+                </div>
+                <div>
+                    <div class="font-bold text-emerald-400 text-sm">2.400 RPM</div>
+                    <div>Tốc độ cất cánh</div>
+                </div>
+            </div>
+            <button id="btn-start-chapter" class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-base sm:text-lg shadow-[0_0_30px_rgba(245,158,11,0.5)] active:scale-95 transition cursor-pointer">
+                🚀 BẮT ĐẦU CHƯƠNG 2
+            </button>
+            <p class="text-[11px] text-slate-400">Hỗ trợ âm thanh Sáo Trúc tổng hợp & phản hồi rung Haptic 20ms</p>
+        </div>
+    </div>
+
+    <!-- DIALOGUE SPEECH BUBBLE CONTAINER -->
+    <div id="dialogue-container" class="fixed bottom-4 left-3 right-3 sm:left-auto sm:right-auto sm:left-1/2 sm:-translate-x-1/2 z-30 max-w-xl w-auto sm:w-full hidden">
+        <div id="dialogue-card" class="glass-panel rounded-3xl p-4 sm:p-5 border-2 border-amber-400/40 shadow-2xl bubble-enter">
+            <div class="flex items-start gap-3.5">
+                <div id="speaker-avatar" class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center text-2xl sm:text-3xl shrink-0 bg-amber-500/20 border border-amber-400/40 shadow-inner">
+                    🤖
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-2 mb-1">
+                        <span id="speaker-name" class="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-amber-400">BIT</span>
+                        <span id="dialogue-step" class="text-[11px] text-slate-400 mono-font">1 / 4</span>
+                    </div>
+                    <p id="dialogue-text" class="text-sm sm:text-base text-white font-medium leading-relaxed">
+                        "Máy xay sinh tố biết bay?!"
+                    </p>
+                </div>
+            </div>
+            <div class="mt-3.5 flex items-center justify-end gap-2">
+                <button id="btn-skip-dialogue" class="px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition">
+                    Vào mô phỏng ngay
+                </button>
+                <button id="btn-next-dialogue" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm shadow-lg active:scale-95 transition flex items-center gap-1.5">
+                    <span>Tiếp tục</span>
+                    <span>➔</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AERODYNAMICS & NEWTON'S 3RD LAW CONTROL DECK -->
+    <div id="physics-panel" class="fixed bottom-3 left-3 right-3 sm:left-auto sm:right-4 sm:bottom-4 z-20 sm:w-[410px] hidden">
+        <div id="physics-card" class="glass-panel rounded-3xl p-4 sm:p-5 space-y-3.5 border border-amber-400/35">
+            <!-- Formula & Live Status Header -->
+            <div class="flex items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+                <div>
+                    <div class="text-[10px] uppercase tracking-wider text-amber-300 font-bold">Định Luật III Newton</div>
+                    <div class="mono-font text-sm sm:text-base font-bold text-white">
+                        F<sub>lift</sub> = <span class="text-amber-400">ṁ</span> · <span class="text-orange-400">v<sub>down</sub></span>
+                    </div>
+                </div>
+                <div id="flight-status-badge" class="px-3 py-1.5 rounded-xl text-xs font-extrabold bg-red-500/20 border border-red-500/40 text-red-300 text-right">
+                    ⚠️ Rơi tự do
+                </div>
+            </div>
+
+            <!-- Live Force Comparison Bar -->
+            <div class="bg-black/40 rounded-2xl p-3 border border-white/10 space-y-2">
+                <div class="flex justify-between text-xs font-semibold">
+                    <span class="text-orange-400">Lực nâng F<sub>lift</sub>: <b id="val-flift" class="mono-font text-white">1.67 N</b></span>
+                    <span class="text-red-400">Trọng lực P: <b id="val-weight" class="mono-font text-white">6.68 N</b></span>
+                </div>
+                <!-- Visual Force Bar -->
+                <div class="relative h-3.5 bg-slate-800 rounded-full overflow-hidden border border-white/10">
+                    <!-- Threshold marker for Weight P -->
+                    <div id="weight-marker" class="absolute top-0 bottom-0 w-1 bg-red-500 z-10 shadow-[0_0_8px_#ef4444]" style="left: 50%;" title="Mức Trọng lực P cần vượt qua"></div>
+                    <!-- Dynamic Lift Fill -->
+                    <div id="lift-bar-fill" class="h-full bg-gradient-to-r from-orange-500 to-amber-400 transition-all duration-100 rounded-full" style="width: 15%;"></div>
+                </div>
+                <div class="flex justify-between text-[10px] text-slate-400">
+                    <span>0 N</span>
+                    <span id="threshold-hint" class="text-amber-300 font-semibold">Cần ≥ 2.400 RPM trên Sao Hỏa</span>
+                    <span>Max</span>
+                </div>
+            </div>
+
+            <!-- Slider 1: Air Density -->
+            <div class="space-y-1.5">
+                <div class="flex justify-between items-center text-xs">
+                    <label for="slider-density" class="font-bold text-slate-200 flex items-center gap-1.5">
+                        <span>🌫️ Độ dày Không Khí (ρ)</span>
+                    </label>
+                    <span id="label-density" class="mono-font font-bold px-2 py-0.5 rounded-lg bg-orange-500/20 text-orange-300 border border-orange-500/30">
+                        Sao Hỏa (1%)
+                    </span>
+                </div>
+                <input id="slider-density" type="range" min="1" max="100" value="1" step="1">
+                <div class="flex justify-between text-[10px] text-slate-400">
+                    <button type="button" id="preset-mars" class="hover:text-amber-300 underline cursor-pointer">Sao Hỏa (1% - 0.015 kg/m³)</button>
+                    <button type="button" id="preset-earth" class="hover:text-sky-300 underline cursor-pointer">Trái Đất (100% - 1.225 kg/m³)</button>
+                </div>
+            </div>
+
+            <!-- Slider 2: Rotor RPM -->
+            <div class="space-y-1.5">
+                <div class="flex justify-between items-center text-xs">
+                    <label for="slider-rpm" class="font-bold text-slate-200 flex items-center gap-1.5">
+                        <span>🚁 Tốc độ Cánh Quạt</span>
+                    </label>
+                    <span id="label-rpm" class="mono-font font-bold text-sm text-amber-400">1.200 RPM</span>
+                </div>
+                <input id="slider-rpm" type="range" min="0" max="3000" value="1200" step="10">
+                <div class="flex justify-between text-[10px] text-slate-400 mono-font">
+                    <span>0 RPM</span>
+                    <span class="text-amber-400/90 font-sans font-semibold">Mục tiêu Sao Hỏa: 2.400 RPM</span>
+                    <span>3.000 RPM</span>
+                </div>
+            </div>
+
+            <!-- Takeoff / Flight 72 Trigger -->
+            <div id="takeoff-actions" class="pt-1 hidden">
+                <button id="btn-flight-72" class="w-full py-2.5 px-4 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 cursor-pointer">
+                    <span>🎬</span>
+                    <span>Tiến tới Chuyến Bay Thứ 72 (Kết thúc)</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCENE END: FLIGHT 72 & REWARD MODAL -->
+    <div id="scene-end-overlay" class="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md hidden">
+        <div class="glass-panel max-w-lg w-full rounded-3xl p-6 sm:p-7 text-center space-y-4 border-2 border-amber-400/50 bubble-enter">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-extrabold uppercase tracking-wider">
+                🏁 SCENE END: CHUYẾN BAY THỨ 72
+            </div>
+
+            <!-- Ingenuity Quote -->
+            <div class="bg-black/40 rounded-2xl p-4 border border-amber-400/25 text-left flex items-start gap-3">
+                <div class="text-3xl shrink-0">🚁</div>
+                <div>
+                    <div class="text-xs font-extrabold text-amber-400 uppercase mb-1">INGENUITY</div>
+                    <p class="text-sm sm:text-base text-white font-medium italic leading-relaxed">
+                        "Kế hoạch là 5 chuyến. Tôi đã làm <span class="text-amber-300 font-bold not-italic">72 chuyến!</span> Khi rơi, tôi gọi đó là <span class="text-emerald-400 font-extrabold not-italic">DỮ LIỆU</span>."
+                    </p>
+                </div>
+            </div>
+
+            <!-- Reward Unlock & Handoff Gift -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+                <div class="rounded-2xl p-3.5 bg-gradient-to-br from-emerald-950/80 to-slate-900/90 border border-emerald-400/40 flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-2xl shrink-0">
+                        🔓
+                    </div>
+                    <div>
+                        <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Reward Unlock</div>
+                        <div class="text-xs sm:text-sm font-extrabold text-white">Flute Stem (Sáo Trúc 140 BPM)</div>
+                        <div class="text-[11px] text-slate-300">Mở khóa giai điệu nền</div>
+                    </div>
+                </div>
+
+                <div class="rounded-2xl p-3.5 bg-gradient-to-br from-amber-950/80 to-slate-900/90 border border-amber-400/40 flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-2xl shrink-0 feather-float">
+                        🪶
+                    </div>
+                    <div>
+                        <div class="text-[10px] font-bold uppercase tracking-wider text-amber-300">Handoff Gift</div>
+                        <div class="text-xs sm:text-sm font-extrabold text-white">Cánh Sáo Vàng</div>
+                        <div class="text-[11px] text-slate-300">Đậu nhẹ lên vai Mây</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-2.5 pt-2">
+                <button id="btn-play-unlocked-flute" class="flex-1 py-3 px-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs sm:text-sm shadow-lg active:scale-95 transition cursor-pointer">
+                    🎶 Nghe Giai Điệu Sáo Mở Khóa
+                </button>
+                <button id="btn-replay-chapter" class="flex-1 py-3 px-4 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs sm:text-sm shadow-lg active:scale-95 transition cursor-pointer">
+                    🔄 Bay Lại Từ Đầu
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * ============================================================================
+         * 1. VIETNAMESE BAMBOO FLUTE (SÁO TRÚC VIỆT NAM) WEB AUDIO SYNTHESIZER
+         * Tổng hợp âm thanh sáo trúc lanh lảnh bằng sóng hài + bộ lọc hơi thở + vibrato
+         * Giai điệu ngũ cung Việt Nam ở nhịp 140 BPM
+         * ============================================================================
+         */
+        class VietnameseFluteSynth {
+            constructor() {
+                this.ctx = null;
+                this.masterGain = null;
+                this.isMuted = false;
+                this.isPlayingMelody = false;
+                this.melodyTimer = null;
+                this.stepIndex = 0;
+                this.bpm = 140;
+                this.rpmMultiplier = 1.0;
+                this.noiseBuffer = null;
+
+                // Âm giai Ngũ cung Việt Nam (C5, D5, E5, G5, A5, C6, D6, E6)
+                // Tần số Hz cao vút đặc trưng của sáo trúc Việt Nam
+                this.pentatonicNotes = [
+                    523.25, // C5 (Hò)
+                    587.33, // D5 (Xự)
+                    659.25, // E5 (Xang)
+                    783.99, // G5 (Xê)
+                    880.00, // A5 (Cống)
+                    1046.50, // C6 (Líu)
+                    1174.66, // D6
+                    1318.51  // E6
+                ];
+
+                // Giai điệu Sáo Trúc dồn dập, vui tươi, lanh lảnh (16 bước / ô nhịp)
+                this.melodyPattern = [
+                    { note: 5, dur: 0.5, slide: false }, // C6
+                    { note: 4, dur: 0.5, slide: true },  // A5
+                    { note: 5, dur: 0.5, slide: false }, // C6
+                    { note: 6, dur: 0.5, slide: true },  // D6
+                    { note: 7, dur: 1.0, slide: true },  // E6 (láy cao)
+                    { note: 5, dur: 0.5, slide: false }, // C6
+                    { note: 3, dur: 0.5, slide: false }, // G5
+                    { note: 4, dur: 0.5, slide: true },  // A5
+                    { note: 5, dur: 0.5, slide: false }, // C6
+                    { note: 3, dur: 0.5, slide: false }, // G5
+                    { note: 2, dur: 0.5, slide: true },  // E5
+                    { note: 3, dur: 1.0, slide: false }, // G5
+                    { note: 4, dur: 0.5, slide: true },  // A5
+                    { note: 5, dur: 0.5, slide: false }, // C6
+                    { note: 6, dur: 0.5, slide: true },  // D6
+                    { note: 5, dur: 1.0, slide: true }   // C6
+                ];
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                    this.masterGain = this.ctx.createGain();
+                    this.masterGain.gain.value = 0.45;
+                    this.masterGain.connect(this.ctx.destination);
+                    this.createBreathNoiseBuffer();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            createBreathNoiseBuffer() {
+                const bufferSize = this.ctx.sampleRate * 2;
+                this.noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = this.noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+            }
+
+            // Phát một nốt Sáo Trúc với kỹ thuật luyến láy (grace note), rung hơi (vibrato) và tiếng gió qua lỗ thổi
+            playFluteNote(freq, duration = 0.35, options = {}) {
+                if (this.isMuted) return;
+                this.init();
+
+                const now = this.ctx.currentTime;
+                const { slideFrom = null, volume = 0.32, vibratoDepth = 10, sustained = false } = options;
+
+                // 1. Sóng chính (Fundamental - Triangle mềm mại nhưng sáng)
+                const oscMain = this.ctx.createOscillator();
+                oscMain.type = 'triangle';
+
+                // 2. Hài âm bậc 2 (Octave harmonic - tạo độ lanh lảnh của ống trúc)
+                const oscHarmonic = this.ctx.createOscillator();
+                oscHarmonic.type = 'sine';
+
+                // Luyến láy đặc trưng sáo trúc (Glissando / Grace note)
+                if (slideFrom) {
+                    oscMain.frequency.setValueAtTime(slideFrom, now);
+                    oscMain.frequency.exponentialRampToValueAtTime(freq, now + Math.min(0.14, duration * 0.4));
+
+                    oscHarmonic.frequency.setValueAtTime(slideFrom * 2, now);
+                    oscHarmonic.frequency.exponentialRampToValueAtTime(freq * 2, now + Math.min(0.14, duration * 0.4));
+                } else {
+                    // Đánh lưỡi nhẹ (chiff pitch attack)
+                    oscMain.frequency.setValueAtTime(freq * 0.97, now);
+                    oscMain.frequency.exponentialRampToValueAtTime(freq, now + 0.035);
+
+                    oscHarmonic.frequency.setValueAtTime(freq * 1.94, now);
+                    oscHarmonic.frequency.exponentialRampToValueAtTime(freq * 2, now + 0.035);
+                }
+
+                // 3. Rung hơi (Vibrato LFO ~ 5.5Hz)
+                const vibrato = this.ctx.createOscillator();
+                const vibratoGain = this.ctx.createGain();
+                vibrato.frequency.value = sustained ? 4.8 : 6.0;
+                vibratoGain.gain.setValueAtTime(0, now);
+                vibratoGain.gain.linearRampToValueAtTime(vibratoDepth, now + Math.min(0.15, duration * 0.5));
+                vibrato.connect(vibratoGain);
+                vibratoGain.connect(oscMain.frequency);
+                vibratoGain.connect(oscHarmonic.frequency);
+
+                // 4. Tiếng hơi thở qua lỗ thổi sáo (Filtered White Noise)
+                const noiseSource = this.ctx.createBufferSource();
+                noiseSource.buffer = this.noiseBuffer;
+                noiseSource.loop = true;
+
+                const bandpass = this.ctx.createBiquadFilter();
+                bandpass.type = 'bandpass';
+                bandpass.frequency.setValueAtTime(freq * 1.5, now);
+                bandpass.Q.value = 3.5;
+
+                const noiseGain = this.ctx.createGain();
+                noiseGain.gain.setValueAtTime(0.001, now);
+                noiseGain.gain.linearRampToValueAtTime(volume * 0.22, now + 0.02);
+                noiseGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+                // Envelope chính của tiếng sáo
+                const noteGain = this.ctx.createGain();
+                noteGain.gain.setValueAtTime(0.001, now);
+                noteGain.gain.linearRampToValueAtTime(volume, now + 0.04);
+                noteGain.gain.setValueAtTime(volume * 0.9, now + duration * 0.7);
+                noteGain.gain.exponentialRampToValueAtTime(0.0008, now + duration + 0.06);
+
+                const harmonicGain = this.ctx.createGain();
+                harmonicGain.gain.value = 0.28;
+
+                // Kết nối đồ thị âm thanh
+                oscMain.connect(noteGain);
+                oscHarmonic.connect(harmonicGain);
+                harmonicGain.connect(noteGain);
+
+                noiseSource.connect(bandpass);
+                bandpass.connect(noiseGain);
+                noiseGain.connect(this.masterGain);
+
+                noteGain.connect(this.masterGain);
+
+                // Khởi chạy và dọn dẹp
+                oscMain.start(now);
+                oscHarmonic.start(now);
+                vibrato.start(now);
+                noiseSource.start(now);
+
+                const stopTime = now + duration + 0.1;
+                oscMain.stop(stopTime);
+                oscHarmonic.stop(stopTime);
+                vibrato.stop(stopTime);
+                noiseSource.stop(stopTime);
+            }
+
+            // Hiệu ứng mở đầu: Tiếng sáo trúc vuốt nốt cao (Glissando)
+            playOpeningGlissando() {
+                if (this.isMuted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+
+                const osc = this.ctx.createOscillator();
+                const osc2 = this.ctx.createOscillator();
+                osc.type = 'triangle';
+                osc2.type = 'sine';
+
+                // Vuốt từ D5 (587Hz) vút lên E6 (1318Hz)
+                osc.frequency.setValueAtTime(587.33, now);
+                osc.frequency.exponentialRampToValueAtTime(1318.51, now + 0.55);
+
+                osc2.frequency.setValueAtTime(587.33 * 2, now);
+                osc2.frequency.exponentialRampToValueAtTime(1318.51 * 2, now + 0.55);
+
+                const vibrato = this.ctx.createOscillator();
+                const vibGain = this.ctx.createGain();
+                vibrato.frequency.value = 7;
+                vibGain.gain.setValueAtTime(0, now + 0.3);
+                vibGain.gain.linearRampToValueAtTime(16, now + 0.6);
+                vibrato.connect(vibGain);
+                vibGain.connect(osc.frequency);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.01, now);
+                gain.gain.linearRampToValueAtTime(0.38, now + 0.15);
+                gain.gain.setValueAtTime(0.35, now + 0.6);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 1.05);
+
+                const hGain = this.ctx.createGain();
+                hGain.gain.value = 0.25;
+
+                osc.connect(gain);
+                osc2.connect(hGain);
+                hGain.connect(gain);
+                gain.connect(this.masterGain);
+
+                osc.start(now);
+                osc2.start(now);
+                vibrato.start(now);
+
+                osc.stop(now + 1.1);
+                osc2.stop(now + 1.1);
+                vibrato.stop(now + 1.1);
+            }
+
+            // Bắt đầu giai điệu Sáo Trúc 140 BPM
+            startMelody(unlockedBoost = false) {
+                this.init();
+                if (this.isPlayingMelody) return;
+                this.isPlayingMelody = true;
+                this.stepIndex = 0;
+
+                const tick = () => {
+                    if (!this.isPlayingMelody) return;
+
+                    const step = this.melodyPattern[this.stepIndex % this.melodyPattern.length];
+                    const baseFreq = this.pentatonicNotes[step.note];
+                    // Tăng nhẹ cao độ khi cánh quạt quay cực nhanh hoặc đã unlock
+                    const pitchFactor = unlockedBoost ? 1.0 : (0.94 + this.rpmMultiplier * 0.08);
+                    const freq = baseFreq * pitchFactor;
+
+                    const prevStep = this.melodyPattern[(this.stepIndex - 1 + this.melodyPattern.length) % this.melodyPattern.length];
+                    const slideFrom = step.slide ? this.pentatonicNotes[prevStep.note] * pitchFactor : null;
+
+                    const beatMs = (60 / this.bpm) * 1000 * 0.5; // Nốt móc đơn ở 140 BPM (~214ms)
+                    const noteDurSec = (beatMs * step.dur) / 1000;
+
+                    this.playFluteNote(freq, noteDurSec * 1.15, {
+                        slideFrom,
+                        volume: unlockedBoost ? 0.34 : 0.24,
+                        vibratoDepth: unlockedBoost ? 14 : 9
+                    });
+
+                    this.stepIndex++;
+                    this.melodyTimer = setTimeout(tick, beatMs * step.dur);
+                };
+
+                tick();
+            }
+
+            stopMelody() {
+                this.isPlayingMelody = false;
+                if (this.melodyTimer) {
+                    clearTimeout(this.melodyTimer);
+                    this.melodyTimer = null;
+                }
+            }
+
+            // Cảnh kết thúc Chuyến bay 72: Ngưng bặt rồi ngân một nốt sáo dịu dàng
+            playEndingSustainedNote() {
+                this.stopMelody();
+                if (this.isMuted) return;
+                this.init();
+
+                // Ngưng bặt 350ms sau tiếng chạm cát, rồi ngân nốt G5 (783.99Hz) ấm áp, sâu lắng
+                setTimeout(() => {
+                    this.playFluteNote(783.99, 3.2, {
+                        slideFrom: 659.25,
+                        volume: 0.34,
+                        vibratoDepth: 12,
+                        sustained: true
+                    });
+                }, 350);
+            }
+
+            toggleMute() {
+                this.isMuted = !this.isMuted;
+                if (this.masterGain) {
+                    this.masterGain.gain.value = this.isMuted ? 0 : 0.45;
+                }
+                return !this.isMuted;
+            }
+        }
+
+        const fluteSynth = new VietnameseFluteSynth();
+
+        /**
+         * ============================================================================
+         * 2. STATE & PHYSICS ENGINE (KHÍ ĐỘNG HỌC & ĐỊNH LUẬT III NEWTON)
+         * Công thức: F_lift = ṁ * v_down
+         * ============================================================================
+         */
+        const state = {
+            phase: 'INTRO', // 'INTRO' | 'DIALOGUE' | 'SIMULATION' | 'TAKEOFF' | 'ENDING'
+            dialogueIdx: 0,
+            airDensityPct: 1, // 1% = Mars (~0.015 kg/m³), 100% = Earth (1.225 kg/m³)
+            rpm: 1200,        // 0 - 3000 RPM
+            heliAltitude: 0,  // Độ cao so với mặt cát Jezero (m)
+            heliVelocityY: 0,
+            heliTiltZ: 0,
+            flightTimer: 0,
+            hasAutoTriggered72: false,
+            fluteUnlocked: false
+        };
+
+        const dialogues = [
+            {
+                speaker: 'BIT',
+                avatar: '🤖',
+                color: 'text-sky-400',
+                text: '"Máy xay sinh tố biết bay?!"'
+            },
+            {
+                speaker: 'INGENUITY',
+                avatar: '🚁',
+                color: 'text-amber-400',
+                text: '"Tôi là TRỰC THĂNG! Nặng 1,8kg trên Trái Đất, nhưng ở đây chỉ còn 0,68kg thôi!"'
+            },
+            {
+                speaker: 'MÂY',
+                avatar: '👧',
+                color: 'text-rose-300',
+                text: '"Bầu khí quyển Sao Hỏa mỏng lắm mà, sao em bay được?"'
+            },
+            {
+                speaker: 'INGENUITY',
+                avatar: '🚁',
+                color: 'text-amber-400',
+                text: '"Thì phải quạt nhanh hơn! 2.400 vòng mỗi phút!"'
+            }
+        ];
+
+        // Tính toán vật lý thời gian thực theo Định luật III Newton: F_lift = ṁ · v_down
+        function calculateAerodynamics() {
+            // Mật độ không khí ρ (kg/m³): Sao Hỏa ~0.015, Trái Đất ~1.225
+            const rho = 0.015 + ((state.airDensityPct - 1) / 99) * (1.225 - 0.015);
+
+            // Trọng lực P = m * g (Ở Sao Hỏa g ≈ 3.72 m/s² -> P ≈ 6.68 N; Trái Đất g ≈ 9.81 m/s² -> P ≈ 17.66 N)
+            // Nội suy trọng lực theo môi trường hành tinh từ Sao Hỏa -> Trái Đất
+            const gravity = 3.72 + ((state.airDensityPct - 1) / 99) * (9.81 - 3.72);
+            const mass = 1.8; // kg
+            const weightP = mass * gravity; // Newton (N)
+
+            // Vận tốc luồng khí đẩy xuống v_down tỉ lệ thuận với RPM (m/s)
+            // Ở 2400 RPM, v_down ≈ 22 m/s
+            const vDown = (state.rpm / 2400) * 22.0;
+
+            // Lưu lượng khối lượng không khí bị đẩy qua đĩa cánh quạt: ṁ = ρ * A * v_down
+            // Diện tích quét đĩa cánh quạt hiệu dụng A ≈ 0.92 m²
+            const rotorArea = 0.92;
+            const massFlowRate = rho * rotorArea * vDown; // kg/s
+
+            // Định luật III Newton: Lực nâng phản lực F_lift = ṁ * v_down
+            const fLift = massFlowRate * vDown;
+
+            return {
+                rho,
+                weightP,
+                vDown,
+                massFlowRate,
+                fLift,
+                canFly: fLift > weightP
+            };
+        }
+
+        /**
+         * ============================================================================
+         * 3. HAPTIC TRIGGER (RUNG 20MS NHỊP CAO MÔ PHỎNG TỐC ĐỘ QUAY CÁNH QUẠT)
+         * ============================================================================
+         */
+        let lastHapticTime = 0;
+        function triggerRotorHaptic(forcePulse = false) {
+            if (state.phase === 'INTRO' || state.phase === 'ENDING') return;
+            if (state.rpm < 200 && !forcePulse) return;
+
+            const now = performance.now();
+            // Tần số rung tỉ lệ với RPM (ở 2400 RPM rung mỗi ~75ms với xung 20ms)
+            const interval = Math.max(65, 320 - (state.rpm / 3000) * 245);
+
+            if (forcePulse || now - lastHapticTime >= interval) {
+                lastHapticTime = now;
+                if (navigator.vibrate) {
+                    navigator.vibrate(20); // Rung nhè nhẹ 20ms theo đúng spec
+                }
+            }
+        }
+
+        /**
+         * ============================================================================
+         * 4. THREE.JS 3D SCENE: JEZERO CRATER, INGENUITY HELICOPTER & FORCE ARROWS
+         * ============================================================================
+         */
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+
+        // Màu bầu trời: Cam đỏ rực Hố Jezero -> Xanh viễn tưởng khi cất cánh
+        const marsSkyColor = new THREE.Color(0xd97724);
+        const marsFogColor = new THREE.Color(0xe08a3c);
+        const sciFiBlueSky = new THREE.Color(0x1d4ed8);
+        const sciFiBlueFog = new THREE.Color(0x38bdf8);
+
+        scene.background = marsSkyColor.clone();
+        scene.fog = new THREE.FogExp2(marsFogColor.getHex(), 0.016);
+
+        const camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.1, 300);
+        camera.position.set(0, 4.2, 6.8);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        // Lighting (Ánh nắng Sao Hỏa rực rỡ + ánh sáng phản xạ cát vàng)
+        const hemiLight = new THREE.HemisphereLight(0xffedd5, 0xb45309, 0.85);
+        scene.add(hemiLight);
+
+        const sunLight = new THREE.DirectionalLight(0xfffbeb, 1.45);
+        sunLight.position.set(8, 16, 10);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 1024;
+        sunLight.shadow.mapSize.height = 1024;
+        sunLight.shadow.camera.near = 1;
+        sunLight.shadow.camera.far = 40;
+        const d = 10;
+        sunLight.shadow.camera.left = -d;
+        sunLight.shadow.camera.right = d;
+        sunLight.shadow.camera.top = d;
+        sunLight.shadow.camera.bottom = -d;
+        scene.add(sunLight);
+
+        // Mặt cát vàng rực Hố Jezero (Jezero Crater Terrain)
+        const groundGeo = new THREE.PlaneGeometry(140, 140, 64, 64);
+        groundGeo.rotateX(-Math.PI / 2);
+        const posAttr = groundGeo.attributes.position;
+        for (let i = 0; i < posAttr.count; i++) {
+            const x = posAttr.getX(i);
+            const z = posAttr.getZ(i);
+            const distFromCenter = Math.sqrt(x * x + z * z);
+            // Phẳng ở bãi đáp trung tâm (bán kính < 3m), gợn sóng cồn cát và vành hố Jezero ở xa
+            if (distFromCenter > 3.2) {
+                const ripples = Math.sin(x * 0.45) * Math.cos(z * 0.45) * 0.35;
+                const craterRim = Math.max(0, (distFromCenter - 18) * 0.28);
+                posAttr.setY(i, ripples + craterRim);
+            }
+        }
+        groundGeo.computeVertexNormals();
+
+        const groundMat = new THREE.MeshStandardMaterial({
+            color: 0xeab308, // Cát vàng rực rỡ
+            emissive: 0x78350f,
+            emissiveIntensity: 0.25,
+            roughness: 0.88,
+            metalness: 0.05
+        });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // Đá sỏi Sao Hỏa rải rác quanh Hố Jezero
+        const rockGeo = new THREE.DodecahedronGeometry(0.25, 0);
+        const rockMat = new THREE.MeshStandardMaterial({ color: 0x9a3412, roughness: 0.9 });
+        for (let i = 0; i < 45; i++) {
+            const rock = new THREE.Mesh(rockGeo, rockMat);
+            const angle = (i / 45) * Math.PI * 2 + Math.random() * 0.5;
+            const radius = 3.5 + Math.random() * 22;
+            rock.position.set(Math.cos(angle) * radius, 0.08, Math.sin(angle) * radius);
+            const s = 0.4 + Math.random() * 1.6;
+            rock.scale.set(s, s * 0.65, s);
+            rock.rotation.set(Math.random(), Math.random(), Math.random());
+            rock.castShadow = true;
+            rock.receiveShadow = true;
+            scene.add(rock);
+        }
+
+        // Bóng in đậm rõ nét ngay dưới mặt cát (đặc biệt rõ ở Cảnh 72)
+        const shadowDiscGeo = new THREE.CircleGeometry(0.85, 32);
+        shadowDiscGeo.rotateX(-Math.PI / 2);
+        const shadowDiscMat = new THREE.MeshBasicMaterial({
+            color: 0x451a03,
+            transparent: true,
+            opacity: 0.48
+        });
+        const groundShadowDisc = new THREE.Mesh(shadowDiscGeo, shadowDiscMat);
+        groundShadowDisc.position.y = 0.015;
+        scene.add(groundShadowDisc);
+
+        /**
+         * MÔ HÌNH TRỰC THĂNG INGENUITY 3D
+         */
+        const ingenuityGroup = new THREE.Group();
+        scene.add(ingenuityGroup);
+
+        // 1. Khối hộp vuông 1.8kg bọc lá vàng cách nhiệt
+        const bodyGeo = new THREE.BoxGeometry(0.68, 0.56, 0.68);
+        const bodyMat = new THREE.MeshStandardMaterial({
+            color: 0xfbbf24,
+            metalness: 0.72,
+            roughness: 0.25
+        });
+        const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+        bodyMesh.position.y = 0.72;
+        bodyMesh.castShadow = true;
+        ingenuityGroup.add(bodyMesh);
+
+        // Ống kính camera điều hướng phía trước thân hộp
+        const lensGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.08, 16);
+        lensGeo.rotateX(Math.PI / 2);
+        const lensMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.1 });
+        const lensMesh = new THREE.Mesh(lensGeo, lensMat);
+        lensMesh.position.set(0, 0.72, 0.35);
+        ingenuityGroup.add(lensMesh);
+
+        // 2. 4 chân đáp sợi carbon mảnh xòe ra
+        const legMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
+        const legAngles = [Math.PI / 4, (3 * Math.PI) / 4, (5 * Math.PI) / 4, (7 * Math.PI) / 4];
+        legAngles.forEach((ang) => {
+            const legGroup = new THREE.Group();
+            const legGeo = new THREE.CylinderGeometry(0.022, 0.018, 0.76, 8);
+            const leg = new THREE.Mesh(legGeo, legMat);
+            leg.position.y = 0.36;
+            leg.rotation.z = 0.42;
+            leg.castShadow = true;
+            legGroup.add(leg);
+
+            // Bàn chân tròn chạm cát
+            const footGeo = new THREE.SphereGeometry(0.04, 8, 8);
+            const foot = new THREE.Mesh(footGeo, legMat);
+            foot.position.set(-0.15, 0.03, 0);
+            legGroup.add(foot);
+
+            legGroup.rotation.y = ang;
+            legGroup.position.set(Math.cos(ang) * 0.28, 0, -Math.sin(ang) * 0.28);
+            ingenuityGroup.add(legGroup);
+        });
+
+        // 3. Trục đồng trục trung tâm
+        const mastGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.95, 12);
+        const mastMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.2 });
+        const mast = new THREE.Mesh(mastGeo, mastMat);
+        mast.position.y = 1.42;
+        mast.castShadow = true;
+        ingenuityGroup.add(mast);
+
+        // 4. Hai tầng cánh quạt đồng trục quay ngược chiều nhau (Counter-rotating Rotors)
+        const bladeMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.35, metalness: 0.3 });
+        const bladeTipMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 });
+
+        function createRotorTier(yPos) {
+            const rotorGroup = new THREE.Group();
+            rotorGroup.position.y = yPos;
+
+            // Hub trung tâm
+            const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.06, 16), mastMat);
+            rotorGroup.add(hub);
+
+            // Cánh quạt dài 1.2m (tỉ lệ trong scene = 2.6 đơn vị)
+            const bladeGeo = new THREE.BoxGeometry(2.6, 0.015, 0.16);
+            const blade = new THREE.Mesh(bladeGeo, bladeMat);
+            blade.castShadow = true;
+            rotorGroup.add(blade);
+
+            // Đầu cánh quạt sơn vàng dễ nhận diện tốc độ quay
+            const tipGeo = new THREE.BoxGeometry(0.14, 0.018, 0.165);
+            const tip1 = new THREE.Mesh(tipGeo, bladeTipMat);
+            tip1.position.x = 1.25;
+            const tip2 = new THREE.Mesh(tipGeo, bladeTipMat);
+            tip2.position.x = -1.25;
+            rotorGroup.add(tip1, tip2);
+
+            return rotorGroup;
+        }
+
+        const lowerRotor = createRotorTier(1.48);
+        const upperRotor = createRotorTier(1.68);
+        ingenuityGroup.add(lowerRotor);
+        ingenuityGroup.add(upperRotor);
+
+        // 5. Tấm pin mặt trời trên đỉnh cùng
+        const solarPanelGeo = new THREE.BoxGeometry(0.95, 0.03, 0.42);
+        const solarPanelMat = new THREE.MeshStandardMaterial({
+            color: 0x1e3a8a,
+            metalness: 0.85,
+            roughness: 0.15
+        });
+        const solarPanel = new THREE.Mesh(solarPanelGeo, solarPanelMat);
+        solarPanel.position.y = 1.9;
+        solarPanel.castShadow = true;
+        ingenuityGroup.add(solarPanel);
+
+        /**
+         * HỆ THỐNG MŨI TÊN LỰC 3D (F_lift màu cam hướng lên & Trọng lực P màu đỏ hướng xuống)
+         */
+        function create3DForceArrow(colorHex) {
+            const group = new THREE.Group();
+            const mat = new THREE.MeshBasicMaterial({ color: colorHex });
+
+            const shaftGeo = new THREE.CylinderGeometry(0.045, 0.045, 1, 12);
+            shaftGeo.translate(0, 0.5, 0);
+            const shaft = new THREE.Mesh(shaftGeo, mat);
+
+            const headGeo = new THREE.ConeGeometry(0.14, 0.32, 16);
+            headGeo.translate(0, 0.16, 0);
+            const head = new THREE.Mesh(headGeo, mat);
+
+            group.add(shaft, head);
+            group.userData = { shaft, head };
+            return group;
+        }
+
+        function updateArrowLength(arrowGroup, length, dirY) {
+            const clampedLen = Math.max(0.15, Math.min(3.5, length));
+            const shaftLen = Math.max(0.05, clampedLen - 0.3);
+            arrowGroup.userData.shaft.scale.set(1, shaftLen, 1);
+            arrowGroup.userData.head.position.y = shaftLen;
+            arrowGroup.rotation.z = dirY > 0 ? 0 : Math.PI;
+        }
+
+        // Mũi tên Lực Nâng F_lift (Màu cam rực hướng lên từ đỉnh cánh quạt)
+        const arrowLift = create3DForceArrow(0xf97316);
+        arrowLift.position.set(0, 1.98, 0);
+        ingenuityGroup.add(arrowLift);
+
+        // Mũi tên Trọng Lực P (Màu đỏ hướng xuống từ tâm khối hộp)
+        const arrowWeight = create3DForceArrow(0xdc2626);
+        arrowWeight.position.set(0.45, 0.72, 0.35);
+        ingenuityGroup.add(arrowWeight);
+
+        /**
+         * HIỆU ỨNG HẠT LUỒNG KHÍ BỊ ĐẨY XUỐNG (v_down) & BỤI CÁT JEZERO
+         */
+        const particleCount = 120;
+        const airParticlesGeo = new THREE.BufferGeometry();
+        const airPositions = new Float32Array(particleCount * 3);
+        const airSpeeds = new Float32Array(particleCount);
+
+        for (let i = 0; i < particleCount; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const r = 0.2 + Math.random() * 1.15;
+            airPositions[i * 3] = Math.cos(angle) * r;
+            airPositions[i * 3 + 1] = Math.random() * 1.5;
+            airPositions[i * 3 + 2] = Math.sin(angle) * r;
+            airSpeeds[i] = 0.5 + Math.random() * 0.8;
+        }
+        airParticlesGeo.setAttribute('position', new THREE.BufferAttribute(airPositions, 3));
+
+        const airParticlesMat = new THREE.PointsMaterial({
+            color: 0xfde68a,
+            size: 0.075,
+            transparent: true,
+            opacity: 0.65
+        });
+        const airParticles = new THREE.Points(airParticlesGeo, airParticlesMat);
+        ingenuityGroup.add(airParticles);
+
+        // Đám bụi cát khi chạm đất (Cảnh 72)
+        const dustCount = 60;
+        const dustGeo = new THREE.BufferGeometry();
+        const dustPos = new Float32Array(dustCount * 3);
+        const dustVel = [];
+        for (let i = 0; i < dustCount; i++) {
+            dustPos[i * 3] = 0;
+            dustPos[i * 3 + 1] = -10;
+            dustPos[i * 3 + 2] = 0;
+            const a = Math.random() * Math.PI * 2;
+            const sp = 0.02 + Math.random() * 0.05;
+            dustVel.push({ x: Math.cos(a) * sp, y: 0.01 + Math.random() * 0.03, z: Math.sin(a) * sp });
+        }
+        dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+        const dustMat = new THREE.PointsMaterial({ color: 0xf59e0b, size: 0.14, transparent: true, opacity: 0 });
+        const dustSystem = new THREE.Points(dustGeo, dustMat);
+        scene.add(dustSystem);
+
+        function triggerSandImpactDust() {
+            const pos = dustSystem.geometry.attributes.position.array;
+            for (let i = 0; i < dustCount; i++) {
+                const a = Math.random() * Math.PI * 2;
+                const r = 0.2 + Math.random() * 0.8;
+                pos[i * 3] = Math.cos(a) * r;
+                pos[i * 3 + 1] = 0.05;
+                pos[i * 3 + 2] = Math.sin(a) * r;
+            }
+            dustSystem.geometry.attributes.position.needsUpdate = true;
+            dustMat.opacity = 0.85;
+        }
+
+        /**
+         * ============================================================================
+         * 5. UI CONTROLLER & INTERACTION FLOW
+         * ============================================================================
+         */
+        const ui = {
+            introOverlay: document.getElementById('intro-overlay'),
+            btnStart: document.getElementById('btn-start-chapter'),
+            dialogueContainer: document.getElementById('dialogue-container'),
+            dialogueCard: document.getElementById('dialogue-card'),
+            speakerAvatar: document.getElementById('speaker-avatar'),
+            speakerName: document.getElementById('speaker-name'),
+            dialogueStep: document.getElementById('dialogue-step'),
+            dialogueText: document.getElementById('dialogue-text'),
+            btnNextDialogue: document.getElementById('btn-next-dialogue'),
+            btnSkipDialogue: document.getElementById('btn-skip-dialogue'),
+            physicsPanel: document.getElementById('physics-panel'),
+            physicsCard: document.getElementById('physics-card'),
+            vectorLegend: document.getElementById('vector-legend'),
+            sliderDensity: document.getElementById('slider-density'),
+            labelDensity: document.getElementById('label-density'),
+            sliderRpm: document.getElementById('slider-rpm'),
+            labelRpm: document.getElementById('label-rpm'),
+            valFlift: document.getElementById('val-flift'),
+            valWeight: document.getElementById('val-weight'),
+            liftBarFill: document.getElementById('lift-bar-fill'),
+            weightMarker: document.getElementById('weight-marker'),
+            flightStatusBadge: document.getElementById('flight-status-badge'),
+            thresholdHint: document.getElementById('threshold-hint'),
+            takeoffActions: document.getElementById('takeoff-actions'),
+            btnFlight72: document.getElementById('btn-flight-72'),
+            sceneEndOverlay: document.getElementById('scene-end-overlay'),
+            btnPlayUnlockedFlute: document.getElementById('btn-play-unlocked-flute'),
+            btnReplayChapter: document.getElementById('btn-replay-chapter'),
+            btnToggleAudio: document.getElementById('btn-toggle-audio'),
+            audioIcon: document.getElementById('audio-icon'),
+            audioLabel: document.getElementById('audio-label'),
+            btnTestFlute: document.getElementById('btn-test-flute')
+        };
+
+        function updateDialogueUI() {
+            const item = dialogues[state.dialogueIdx];
+            ui.speakerAvatar.textContent = item.avatar;
+            ui.speakerName.textContent = item.speaker;
+            ui.speakerName.className = `text-xs sm:text-sm font-extrabold uppercase tracking-wider ${item.color}`;
+            ui.dialogueStep.textContent = `${state.dialogueIdx + 1} / ${dialogues.length}`;
+            ui.dialogueText.textContent = item.text;
+
+            // Re-trigger animation
+            ui.dialogueCard.classList.remove('bubble-enter');
+            void ui.dialogueCard.offsetWidth;
+            ui.dialogueCard.classList.add('bubble-enter');
+
+            // Láy một nốt sáo trúc ngắn khi nhân vật thoại
+            const noteIdx = (state.dialogueIdx + 2) % fluteSynth.pentatonicNotes.length;
+            fluteSynth.playFluteNote(fluteSynth.pentatonicNotes[noteIdx], 0.25, { volume: 0.22 });
+        }
+
+        function enterSimulationPhase() {
+            state.phase = 'SIMULATION';
+            ui.dialogueContainer.classList.add('hidden');
+            ui.physicsPanel.classList.remove('hidden');
+            ui.vectorLegend.classList.remove('hidden');
+            updatePhysicsUI();
+        }
+
+        function updatePhysicsUI() {
+            const aero = calculateAerodynamics();
+
+            // Cập nhật nhãn độ dày không khí
+            if (state.airDensityPct <= 5) {
+                ui.labelDensity.textContent = `Sao Hỏa (${state.airDensityPct}%)`;
+                ui.labelDensity.className = 'mono-font font-bold px-2 py-0.5 rounded-lg bg-orange-500/20 text-orange-300 border border-orange-500/30';
+                ui.thresholdHint.textContent = 'Cần ≥ 2.400 RPM trên Sao Hỏa';
+            } else if (state.airDensityPct >= 90) {
+                ui.labelDensity.textContent = `Trái Đất (${state.airDensityPct}%)`;
+                ui.labelDensity.className = 'mono-font font-bold px-2 py-0.5 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/30';
+                ui.thresholdHint.textContent = 'Không khí dày: Chỉ cần ~480 RPM!';
+            } else {
+                ui.labelDensity.textContent = `Trung gian (${state.airDensityPct}%)`;
+                ui.labelDensity.className = 'mono-font font-bold px-2 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30';
+                ui.thresholdHint.textContent = 'Điều chỉnh RPM để F_lift > P';
+            }
+
+            // Cập nhật nhãn RPM & tốc độ nhạc sáo
+            ui.labelRpm.textContent = `${state.rpm.toLocaleString('vi-VN')} RPM`;
+            fluteSynth.rpmMultiplier = state.rpm / 2400;
+
+            // Hiển thị giá trị Newton
+            ui.valFlift.textContent = `${aero.fLift.toFixed(2)} N`;
+            ui.valWeight.textContent = `${aero.weightP.toFixed(2)} N`;
+
+            // Thanh đo tỉ lệ lực (đặt mốc P ở 50% thanh đo để dễ quan sát)
+            const ratio = aero.fLift / aero.weightP;
+            const fillPct = Math.min(100, Math.max(2, ratio * 50));
+            ui.liftBarFill.style.width = `${fillPct}%`;
+
+            // Cập nhật độ dài mũi tên 3D
+            updateArrowLength(arrowWeight, 0.9 + (aero.weightP / 18) * 0.9, -1);
+            updateArrowLength(arrowLift, 0.25 + Math.min(2.6, ratio * 1.15), 1);
+
+            // Rung UI nhẹ theo tốc độ quay cánh quạt
+            if (state.rpm >= 1800 && state.phase !== 'ENDING') {
+                ui.physicsCard.classList.add('haptic-vibrate-ui');
+            } else {
+                ui.physicsCard.classList.remove('haptic-vibrate-ui');
+            }
+
+            // Trạng thái vật lý: Cất cánh vs Rơi tự do
+            if (aero.canFly) {
+                ui.flightStatusBadge.textContent = '✅ Cất cánh! (F_lift > P)';
+                ui.flightStatusBadge.className = 'px-3 py-1.5 rounded-xl text-xs font-extrabold bg-emerald-500/25 border border-emerald-400/50 text-emerald-300 text-right';
+                ui.liftBarFill.className = 'h-full bg-gradient-to-r from-emerald-500 to-teal-300 transition-all duration-100 rounded-full';
+                ui.takeoffActions.classList.remove('hidden');
+
+                if (state.phase === 'SIMULATION') {
+                    state.phase = 'TAKEOFF';
+                    state.flightTimer = 0;
+                }
+            } else {
+                ui.flightStatusBadge.textContent = '⚠️ Rơi tự do (F_lift < P)';
+                ui.flightStatusBadge.className = 'px-3 py-1.5 rounded-xl text-xs font-extrabold bg-red-500/20 border border-red-500/40 text-red-300 text-right';
+                ui.liftBarFill.className = 'h-full bg-gradient-to-r from-orange-600 to-amber-400 transition-all duration-100 rounded-full';
+
+                if (state.phase === 'TAKEOFF') {
+                    state.phase = 'SIMULATION';
+                }
+            }
+        }
+
+        function triggerSceneEnd72() {
+            if (state.phase === 'ENDING') return;
+            state.phase = 'ENDING';
+            state.rpm = 0;
+            ui.sliderRpm.value = 0;
+            ui.physicsCard.classList.remove('haptic-vibrate-ui');
+
+            // Hạ trực thăng xuống mặt cát, va nhẹ cánh quạt và dừng hẳn
+            state.heliAltitude = 0;
+            state.heliVelocityY = 0;
+            state.heliTiltZ = 0.14; // Nghiêng nhẹ trên cát sau cú chạm
+            updateArrowLength(arrowLift, 0.15, 1);
+            triggerSandImpactDust();
+
+            // Tiếng sáo ngưng bặt rồi ngân nốt dịu dàng
+            fluteSynth.playEndingSustainedNote();
+
+            // Rung nhẹ 1 nhịp chạm đất
+            if (navigator.vibrate) navigator.vibrate([30, 40, 20]);
+
+            // Hiển thị Scene End Overlay sau 1.1 giây để người dùng kịp thấy cảnh chạm cát & bóng đổ
+            setTimeout(() => {
+                ui.physicsPanel.classList.add('hidden');
+                ui.vectorLegend.classList.add('hidden');
+                ui.sceneEndOverlay.classList.remove('hidden');
+            }, 1150);
+        }
+
+        // Event Listeners
+        ui.btnStart.addEventListener('click', () => {
+            fluteSynth.init();
+            fluteSynth.playOpeningGlissando();
+            if (navigator.vibrate) navigator.vibrate(20);
+
+            ui.introOverlay.classList.add('hidden');
+            state.phase = 'DIALOGUE';
+            state.dialogueIdx = 0;
+            ui.dialogueContainer.classList.remove('hidden');
+            updateDialogueUI();
+
+            // Khởi chạy giai điệu sáo trúc 140 BPM sau tiếng vuốt glissando mở đầu
+            setTimeout(() => {
+                if (state.phase !== 'ENDING') {
+                    fluteSynth.startMelody(false);
+                }
+            }, 950);
+        });
+
+        ui.btnNextDialogue.addEventListener('click', () => {
+            if (state.dialogueIdx < dialogues.length - 1) {
+                state.dialogueIdx++;
+                updateDialogueUI();
+            } else {
+                enterSimulationPhase();
+            }
+        });
+
+        ui.btnSkipDialogue.addEventListener('click', () => {
+            enterSimulationPhase();
+        });
+
+        ui.sliderDensity.addEventListener('input', (e) => {
+            state.airDensityPct = parseInt(e.target.value, 10);
+            updatePhysicsUI();
+        });
+
+        document.getElementById('preset-mars').addEventListener('click', () => {
+            state.airDensityPct = 1;
+            ui.sliderDensity.value = 1;
+            updatePhysicsUI();
+        });
+
+        document.getElementById('preset-earth').addEventListener('click', () => {
+            state.airDensityPct = 100;
+            ui.sliderDensity.value = 100;
+            updatePhysicsUI();
+        });
+
+        ui.sliderRpm.addEventListener('input', (e) => {
+            state.rpm = parseInt(e.target.value, 10);
+            triggerRotorHaptic(true);
+            updatePhysicsUI();
+        });
+
+        ui.btnFlight72.addEventListener('click', () => {
+            triggerSceneEnd72();
+        });
+
+        ui.btnPlayUnlockedFlute.addEventListener('click', () => {
+            state.fluteUnlocked = true;
+            fluteSynth.rpmMultiplier = 1.0;
+            fluteSynth.startMelody(true);
+            ui.btnPlayUnlockedFlute.textContent = '🎶 Đang phát Sáo Trúc 140 BPM...';
+        });
+
+        ui.btnReplayChapter.addEventListener('click', () => {
+            fluteSynth.stopMelody();
+            state.phase = 'SIMULATION';
+            state.airDensityPct = 1;
+            state.rpm = 1200;
+            state.heliAltitude = 0;
+            state.heliVelocityY = 0;
+            state.heliTiltZ = 0;
+            state.flightTimer = 0;
+            state.hasAutoTriggered72 = false;
+
+            ui.sliderDensity.value = 1;
+            ui.sliderRpm.value = 1200;
+            ui.sceneEndOverlay.classList.add('hidden');
+            ui.physicsPanel.classList.remove('hidden');
+            ui.vectorLegend.classList.remove('hidden');
+            ui.takeoffActions.classList.add('hidden');
+
+            fluteSynth.playOpeningGlissando();
+            setTimeout(() => fluteSynth.startMelody(state.fluteUnlocked), 800);
+            updatePhysicsUI();
+        });
+
+        ui.btnToggleAudio.addEventListener('click', () => {
+            const active = fluteSynth.toggleMute();
+            ui.audioIcon.textContent = active ? '🔊' : '🔇';
+            ui.audioLabel.textContent = active ? 'Sáo 140 BPM' : 'Đã tắt tiếng';
+        });
+
+        ui.btnTestFlute.addEventListener('click', () => {
+            fluteSynth.playOpeningGlissando();
+        });
+
+        /**
+         * ============================================================================
+         * 6. ANIMATION LOOP (3D ROTORS, CAMERA BOBBING 140 BPM & SKY TRANSITION)
+         * ============================================================================
+         */
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const dt = Math.min(clock.getDelta(), 0.05);
+            const elapsed = clock.getElapsedTime();
+
+            // 1. Quay 2 tầng cánh quạt ngược chiều nhau (Counter-rotating)
+            const spinSpeed = (state.rpm / 60) * Math.PI * 2 * dt * 0.25;
+            lowerRotor.rotation.y += spinSpeed;
+            upperRotor.rotation.y -= spinSpeed;
+
+            // Haptic feedback liên tục khi quạt đang quay nhanh
+            if (state.rpm >= 1500 && (state.phase === 'SIMULATION' || state.phase === 'TAKEOFF')) {
+                triggerRotorHaptic(false);
+            }
+
+            // 2. Mô phỏng chuyển động cất cánh / rơi tự do của Ingenuity
+            const aero = calculateAerodynamics();
+            if (state.phase === 'TAKEOFF' && aero.canFly) {
+                // Gia tốc hướng lên theo Định luật II Newton: a = (F_lift - P) / m
+                const netForce = aero.fLift - aero.weightP;
+                const accel = Math.min(4.5, (netForce / 1.8) * 0.65);
+                state.heliVelocityY = Math.min(4.2, state.heliVelocityY + accel * dt);
+                state.heliAltitude = Math.min(18, state.heliAltitude + state.heliVelocityY * dt);
+                state.heliTiltZ = Math.sin(elapsed * 3.5) * 0.03;
+
+                // Tự động chuyển sang Chuyến bay 72 sau 7.5 giây bay lượn trên bầu trời xanh
+                state.flightTimer += dt;
+                if (state.flightTimer > 7.5 && !state.hasAutoTriggered72) {
+                    state.hasAutoTriggered72 = true;
+                    triggerSceneEnd72();
+                }
+            } else if (state.phase === 'SIMULATION' || (state.phase === 'TAKEOFF' && !aero.canFly)) {
+                // Chưa đủ lực nâng -> Rơi tự do về mặt cát & rung lắc nhẹ nếu quạt đang chạy
+                if (state.heliAltitude > 0) {
+                    state.heliVelocityY -= 3.72 * dt;
+                    state.heliAltitude = Math.max(0, state.heliAltitude + state.heliVelocityY * dt);
+                } else {
+                    state.heliVelocityY = 0;
+                    // Rung nhè nhẹ sát mặt cát khi quạt quay nhưng chưa đủ 2400 RPM
+                    const groundHop = state.rpm > 800 ? Math.abs(Math.sin(elapsed * 22)) * (state.rpm / 3000) * 0.04 : 0;
+                    ingenuityGroup.position.y = groundHop;
+                    state.heliTiltZ = state.rpm > 800 ? Math.sin(elapsed * 18) * 0.025 : 0;
+                }
+            }
+
+            if (state.heliAltitude > 0 || state.phase === 'ENDING') {
+                ingenuityGroup.position.y = state.heliAltitude;
+            }
+            ingenuityGroup.rotation.z += (state.heliTiltZ - ingenuityGroup.rotation.z) * 0.12;
+
+            // Cập nhật bóng đổ trên cát (nhỏ dần khi bay cao, đậm rõ khi chạm cát ở Cảnh 72)
+            const shadowScale = Math.max(0.25, 1 - state.heliAltitude * 0.05);
+            groundShadowDisc.scale.set(shadowScale, shadowScale, 1);
+            groundShadowDisc.material.opacity = state.phase === 'ENDING' ? 0.62 : Math.max(0.12, 0.48 - state.heliAltitude * 0.025);
+
+            // 3. Hiệu ứng hạt luồng khí bị đẩy xuống (v_down)
+            const airPos = airParticles.geometry.attributes.position.array;
+            const downVel = (state.rpm / 2400) * 3.8 * dt;
+            airParticlesMat.opacity = state.rpm > 100 ? Math.min(0.8, (state.rpm / 2400) * 0.75) : 0;
+
+            for (let i = 0; i < particleCount; i++) {
+                airPos[i * 3 + 1] -= downVel * airSpeeds[i];
+                if (airPos[i * 3 + 1] < 0.05) {
+                    airPos[i * 3 + 1] = 1.55;
+                }
+            }
+            airParticles.geometry.attributes.position.needsUpdate = true;
+
+            // 4. Hiệu ứng bụi cát khi va chạm (Cảnh 72)
+            if (dustMat.opacity > 0.01) {
+                const dPos = dustSystem.geometry.attributes.position.array;
+                for (let i = 0; i < dustCount; i++) {
+                    dPos[i * 3] += dustVel[i].x;
+                    dPos[i * 3 + 1] += dustVel[i].y;
+                    dPos[i * 3 + 2] += dustVel[i].z;
+                }
+                dustSystem.geometry.attributes.position.needsUpdate = true;
+                dustMat.opacity *= 0.96;
+            }
+
+            // 5. Chuyển đổi màu bầu trời từ Cam Đỏ Sao Hỏa -> Xanh Viễn Tưởng khi bay cao
+            const skyBlend = Math.min(1, Math.max(0, (state.heliAltitude - 0.5) / 8.0));
+            scene.background.lerpColors(marsSkyColor, sciFiBlueSky, skyBlend);
+            scene.fog.color.lerpColors(marsFogColor, sciFiBlueFog, skyBlend);
+
+            // 6. Camera góc nhìn từ trên cao nhún nhảy theo nhịp 140 BPM (Dynamic Camera Bobbing)
+            // 140 BPM = 2.333 beats/giây -> tần số góc = 2 * PI * 2.333 ≈ 14.66 rad/s
+            const beatFreq = (140 / 60) * Math.PI * 2;
+            const bobAmplitude = state.phase === 'ENDING' ? 0.01 : 0.085;
+            const bobY = Math.sin(elapsed * beatFreq) * bobAmplitude;
+            const swayX = Math.cos(elapsed * beatFreq * 0.5) * (bobAmplitude * 1.4);
+
+            // Camera đuổi theo trực thăng khi cất cánh lên bầu trời xanh
+            const targetCamY = 3.8 + state.heliAltitude * 0.92 + bobY;
+            const targetCamZ = 6.4 - Math.min(1.6, state.heliAltitude * 0.08);
+            const targetLookY = 1.1 + state.heliAltitude * 0.96;
+
+            camera.position.x += (swayX - camera.position.x) * 0.08;
+            camera.position.y += (targetCamY - camera.position.y) * 0.08;
+            camera.position.z += (targetCamZ - camera.position.z) * 0.08;
+            camera.lookAt(0, targetLookY, 0);
+
+            renderer.render(scene, camera);
+        }
+
+        // Responsive Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.onload = function () {
+            updatePhysicsUI();
+            animate();
+        };
+    </script>
+</body>
+</html>

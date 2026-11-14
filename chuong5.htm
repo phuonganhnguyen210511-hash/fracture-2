@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trạm Thực Hành & Chương 5: Pioneer 10 – "Tôi vẫn đang đi"</title>
+  <style>
+    :root {
+      --bg-space: #030308;
+      --panel-bg: rgba(8, 8, 18, 0.9);
+      --accent-gold: #fbbf24;
+      --accent-cyan: #38bdf8;
+      --accent-purple: #a855f7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-glass: rgba(251, 191, 36, 0.28);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-space);
+      color: var(--text-main);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #canvas-container {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+    }
+
+    /* Global Routing Nav Bar */
+    .global-router {
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 30;
+      background: rgba(10, 10, 22, 0.92);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-glass);
+      border-radius: 999px;
+      padding: 6px 14px;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.8);
+    }
+
+    .route-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .route-btn:hover {
+      color: #fff;
+      background: rgba(251, 191, 36, 0.15);
+    }
+
+    .route-btn.active {
+      background: linear-gradient(135deg, #d97706, #fbbf24);
+      color: #000;
+      box-shadow: 0 0 12px rgba(251, 191, 36, 0.6);
+    }
+
+    /* HUD Header */
+    .hud-header {
+      position: fixed;
+      top: 58px;
+      left: 18px;
+      right: 18px;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      pointer-events: none;
+    }
+
+    .chapter-badge {
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-glass);
+      padding: 10px 16px;
+      border-radius: 12px;
+      pointer-events: auto;
+    }
+
+    .chapter-badge h1 {
+      font-size: 1.05rem;
+      color: var(--accent-gold);
+      margin-bottom: 3px;
+    }
+
+    .chapter-badge p {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+    }
+
+    .telemetry-pills {
+      display: flex;
+      gap: 8px;
+      pointer-events: auto;
+    }
+
+    .pill {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-glass);
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    .pill .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+
+    .pill.active .dot {
+      background: #22c55e;
+      box-shadow: 0 0 8px #22c55e;
+    }
+
+    /* Dialogue Box */
+    .dialogue-box {
+      position: fixed;
+      top: 130px;
+      left: 18px;
+      width: min(390px, calc(100vw - 36px));
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border-glass);
+      border-radius: 14px;
+      padding: 14px 16px;
+      z-index: 10;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7);
+    }
+
+    .speaker-tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 3px 9px;
+      border-radius: 5px;
+      margin-bottom: 6px;
+    }
+
+    .speaker-bit { background: #7c3aed; color: #fff; }
+    .speaker-pioneer { background: #d97706; color: #fff; }
+    .speaker-may { background: #db2777; color: #fff; }
+
+    .dialogue-text {
+      font-size: 0.88rem;
+      line-height: 1.45;
+      color: #e2e8f0;
+      min-height: 40px;
+    }
+
+    .dialogue-controls {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .step-indicator {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .btn-sm {
+      background: linear-gradient(135deg, #d97706, #fbbf24);
+      color: #000;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    /* Core Mechanics Dock (Bottom Split) */
+    .mechanics-dock {
+      position: fixed;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(1080px, calc(100vw - 24px));
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 14px;
+      z-index: 10;
+    }
+
+    @media (max-width: 860px) {
+      .mechanics-dock {
+        grid-template-columns: 1fr;
+        max-height: 54vh;
+        overflow-y: auto;
+      }
+    }
+
+    .mech-card {
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-glass);
+      border-radius: 16px;
+      padding: 14px 16px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85);
+    }
+
+    .mech-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(251, 191, 36, 0.2);
+    }
+
+    .mech-title {
+      font-size: 0.86rem;
+      font-weight: 800;
+      color: var(--accent-gold);
+    }
+
+    /* Mechanic A: Inverse Square Law Slider */
+    .inverse-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .slider-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 7px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #38bdf8, #a855f7, #fbbf24);
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid var(--accent-gold);
+      box-shadow: 0 0 8px rgba(0,0,0,0.6);
+    }
+
+    .signal-status-box {
+      background: rgba(0, 0, 0, 0.55);
+      border: 1px solid rgba(251, 191, 36, 0.25);
+      border-radius: 10px;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+    }
+
+    /* Mechanic B: Pioneer Plaque Interactive Builder */
+    .plaque-builder {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .symbol-chip {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px dashed rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .symbol-chip.selected {
+      background: rgba(251, 191, 36, 0.22);
+      border-color: var(--accent-gold);
+      border-style: solid;
+      color: #fde047;
+    }
+
+    .plaque-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.76rem;
+    }
+
+    /* Modals */
+    .overlay-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 3, 10, 0.88);
+      backdrop-filter: blur(10px);
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      transition: opacity 0.35s ease;
+    }
+
+    .overlay-modal.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .modal-card {
+      background: linear-gradient(160deg, #18142c, #0a0814);
+      border: 1px solid var(--accent-gold);
+      border-radius: 20px;
+      max-width: 480px;
+      width: 100%;
+      padding: 26px;
+      text-align: center;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.9);
+    }
+
+    .modal-card h2 {
+      color: var(--accent-gold);
+      font-size: 1.35rem;
+      margin-bottom: 10px;
+    }
+
+    .modal-card p {
+      color: #cbd5e1;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      margin-bottom: 18px;
+    }
+
+    .reward-box {
+      background: rgba(251, 191, 36, 0.12);
+      border: 1px dashed var(--accent-gold);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 18px;
+      text-align: left;
+      font-size: 0.84rem;
+      color: #fef08a;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #d97706, #fbbf24);
+      color: #000;
+      border: none;
+      padding: 11px 24px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <!-- Global Router Navigation -->
+  <nav class="global-router" aria-label="Điều hướng hệ thống">
+    <a href="#ch1" class="route-btn" data-ch="1">Ch.1 Viking</a>
+    <a href="#ch2" class="route-btn" data-ch="2">Ch.2 Ingenuity</a>
+    <a href="#ch3" class="route-btn" data-ch="3">Ch.3 Sojourner</a>
+    <a href="#ch4" class="route-btn" data-ch="4">Ch.4 Viking 1</a>
+    <a href="#ch5" class="route-btn active" data-ch="5">Ch.5 Pioneer 10</a>
+  </nav>
+
+  <div id="canvas-container"></div>
+
+  <!-- Start Modal -->
+  <div class="overlay-modal" id="start-modal">
+    <div class="modal-card">
+      <div style="font-size: 2.8rem; margin-bottom: 8px;">🌌🪕</div>
+      <h2>TRẠM THỰC HÀNH & CHƯƠNG 5: PIONEER 10</h2>
+      <p>"Tôi vẫn đang đi" (Rìa Hệ Mặt Trời)<br>
+      Khám phá luật suy giảm tín hiệu nghịch đảo bình phương $1/r^2$, thiết kế Tấm bảng mạ vàng Sagan và thưởng thức chuỗi nốt rải mênh mang từ <strong>Đàn T'rưng & Đàn Bầu Việt Nam</strong>!</p>
+      <button class="btn-primary" id="btn-start">Khởi Động Trạm Thực Hành & Bật Âm Thanh</button>
+    </div>
+  </div>
+
+  <!-- End Modal -->
+  <div class="overlay-modal hidden" id="end-modal">
+    <div class="modal-card">
+      <div style="font-size: 2.8rem; margin-bottom: 8px;">✨🛰️</div>
+      <h2>LỜI CHÀO 2 TRIỆU NĂM</h2>
+      <p style="font-style: italic; color: #fef08a;">
+        <strong>PIONEER 10:</strong> "Không ai bỏ ta lại. Họ gửi ta đi. Hãy gửi lời chào đi xa hơn chính mình."
+      </p>
+      <div class="reward-box">
+        <div>🔓 <strong>Unlock Stem:</strong> Chuỗi nốt rải Đàn T'rưng & Đàn Bầu (Không gian mênh mang)</div>
+        <div style="margin-top: 5px;">✅ <strong>Trạng thái hệ thống:</strong> Hoàn thành xuất sắc toàn bộ 5 Chương!</div>
+      </div>
+      <button class="btn-primary" id="btn-close-end">Quan sát Pioneer 10 trôi về Aldebaran</button>
+    </div>
+  </div>
+
+  <!-- HUD Header -->
+  <header class="hud-header">
+    <div class="chapter-badge">
+      <h1>CHƯƠNG 5: PIONEER 10 – "Tôi vẫn đang đi"</h1>
+      <p>Bối cảnh: Rìa Hệ Mặt Trời • Luật $1/r^2$ & Tấm bảng mạ vàng Sagan</p>
+    </div>
+    <div class="telemetry-pills">
+      <div class="pill active" id="audio-pill">
+        <span class="dot"></span>
+        <span id="audio-label">Đàn T'rưng & Đàn Bầu: Bật</span>
+      </div>
+      <div class="pill" id="haptic-pill">
+        <span class="dot"></span>
+        <span id="haptic-label">Haptic: Vi mô 10ms</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Story Dialogue Box -->
+  <aside class="dialogue-box">
+    <span class="speaker-tag speaker-bit" id="speaker-tag">BIT</span>
+    <div class="dialogue-text" id="dialogue-text">"Mất sóng rồi Mây ơi! 5G tớ hết vạch rồi!"</div>
+    <div class="dialogue-controls">
+      <span class="step-indicator" id="step-indicator">Thoại 1 / 4</span>
+      <button class="btn-sm" id="btn-next-dialogue">Tiếp theo ▸</button>
+    </div>
+  </aside>
+
+  <!-- Core Mechanics Dock -->
+  <section class="mechanics-dock">
+    <!-- Mechanic A: Inverse Square Law Slider -->
+    <div class="mech-card">
+      <div class="mech-header">
+        <span class="mech-title">📡 Mechanic A: Luật Suy Giảm $1/r^2$</span>
+        <span id="distance-readout" style="font-size: 0.75rem; color: #fde047;">r = 1 AU</span>
+      </div>
+      <div class="inverse-controls">
+        <div class="slider-row">
+          <span>1 AU (Trái Đất)</span>
+          <span>40 AU</span>
+          <span>80 AU (Pioneer 10)</span>
+        </div>
+        <input type="range" id="slider-au" min="1" max="80" value="1" />
+        <div class="signal-status-box">
+          <div>Cường độ $I \propto \frac{1}{r^2}$: <strong id="signal-intensity-val" style="color: #38bdf8;">1.000 (Max)</strong></div>
+          <button class="task-btn" onclick="alignDeepSpaceNetwork()" style="background: rgba(217,119,6,0.25); border-color:#d97706; padding: 5px 10px; border-radius:6px; cursor:pointer; color:#fff; font-weight:700;">📡 Xoay DSN Thu Sóng</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mechanic B: Pioneer Plaque Builder -->
+    <div class="mech-card">
+      <div class="mech-header">
+        <span class="mech-title">🪙 Mechanic B: Tấm Bảng Mạ Vàng Sagan</span>
+        <span style="font-size: 0.72rem; color: #a855f7;">Chọn 3 biểu tượng</span>
+      </div>
+      <div class="plaque-builder">
+        <div class="symbol-chip" onclick="toggleSymbol(this, 'hydro')">⚛️ Cấu trúc Hydro</div>
+        <div class="symbol-chip" onclick="toggleSymbol(this, 'pulsar')">✨ Bản đồ Xung Xạ</div>
+        <div class="symbol-chip" onclick="toggleSymbol(this, 'human')">👫 Hình thể Loài Người</div>
+        <div class="symbol-chip" onclick="toggleSymbol(this, 'music')">🎶 Tần số Âm nhạc</div>
+      </div>
+      <div class="plaque-actions">
+        <span id="plaque-status" style="font-size: 0.76rem; color: #fde047;">Đã chọn: 0 / 3 biểu tượng</span>
+        <button class="task-btn" onclick="launchPlaque()" style="background: linear-gradient(135deg, #d97706, #fbbf24); border:none; color:#000; padding:6px 12px; border-radius:6px; font-weight:800; cursor:pointer;">🚀 Phóng Tấm Bảng</button>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // =========================================================
+    // 1. NHẠC CỤ DÂN TỘC VIỆT NAM: ĐÀN T'RƯNG & ĐÀN BẦU (ARPEGGIO)
+    // =========================================================
+    class SpaceFolkAudio {
+      constructor() {
+        this.ctx = null;
+        this.isEnabled = true;
+        // Ngũ cung thanh tao mô phỏng không gian vũ trụ
+        this.spaceNotes = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51]; // C5 đến E6
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioCtx();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      // Chuỗi nốt rải Đàn T'rưng (Arpeggio lanh canh, trong trẻo)
+      playArpeggio(speedMs = 120) {
+        if (!this.isEnabled) return;
+        this.init();
+        this.spaceNotes.forEach((freq, idx) => {
+          setTimeout(() => {
+            this.playTubeNote(freq, 0.6);
+          }, idx * speedMs);
+        });
+      }
+
+      playTubeNote(freq, duration) {
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+
+        // Hiệu ứng vang không gian (Reverb-like decay)
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.25, now + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + duration);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + duration + 0.02);
+      }
+
+      // Tiếng đàn Bầu ngân dài vĩnh cửu trong không gian
+      playCosmicBau(startFreq = 261.63, targetFreq = 523.25) {
+        if (!this.isEnabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+
+        osc.frequency.setValueAtTime(startFreq, now);
+        osc.frequency.exponentialRampToValueAtTime(targetFreq, now + 1.2);
+        osc.frequency.exponentialRampToValueAtTime(startFreq, now + 2.5);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.35, now + 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + 2.6);
+
+        const lfo = this.ctx.createOscillator();
+        const lfoGain = this.ctx.createGain();
+        lfo.frequency.value = 4.8;
+        lfoGain.gain.value = 14;
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+
+        lfo.start(now);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        lfo.stop(now + 2.6);
+        osc.start(now);
+        osc.stop(now + 2.7);
+      }
+    }
+
+    const spaceAudio = new SpaceFolkAudio();
+
+    function triggerHaptic(ms, label) {
+      const pill = document.getElementById('haptic-pill');
+      const lbl = document.getElementById('haptic-label');
+      pill.classList.add('active');
+      lbl.textContent = label;
+      if (navigator.vibrate) navigator.vibrate(ms);
+      setTimeout(() => {
+        pill.classList.remove('active');
+        lbl.textContent = 'Haptic: Vi mô 10ms';
+      }, Math.max(200, ms + 50));
+    }
+
+    // =========================================================
+    // 2. KỊCH BẢN HỘI THOẠI
+    // =========================================================
+    const dialogues = [
+      { speaker: "BIT", css: "speaker-bit", text: '"Mất sóng rồi Mây ơi! 5G tớ hết vạch rồi!"' },
+      { speaker: "PIONEER 10", css: "speaker-pioneer", text: '"Tín hiệu của ta vẫn chạy đi... chỉ mất 11 tiếng mới về tới nhà thôi."' },
+      { speaker: "MÂY", css: "speaker-may", text: '"Bác đang ở xa Trái Đất lắm đúng không?"' },
+      { speaker: "PIONEER 10", css: "speaker-pioneer", text: '"Khoảng 12 tỷ km. Ta là người tiên phong rời khỏi Hệ Mặt Trời. Hãy khám phá luật 1/r^2 và Tấm bảng mạ vàng nhé."' }
+    ];
+    let dialogueIdx = 0;
+
+    document.getElementById('btn-next-dialogue').addEventListener('click', () => {
+      dialogueIdx = (dialogueIdx + 1) % dialogues.length;
+      const d = dialogues[dialogueIdx];
+      const tag = document.getElementById('speaker-tag');
+      tag.textContent = d.speaker;
+      tag.className = `speaker-tag ${d.css}`;
+      document.getElementById('dialogue-text').textContent = d.text;
+      document.getElementById('step-indicator').textContent = `Thoại ${dialogueIdx + 1} / 4`;
+      spaceAudio.playTubeNote(523.25 + dialogueIdx * 110, 0.5);
+    });
+
+    // =========================================================
+    // 3. THREE.JS 3D SCENE: RÌA HỆ MẶT TRỜI & TÀU PIONEER 10
+    // =========================================================
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x030308);
+
+    // Hàng triệu chòm sao lấp lánh (Particle Field)
+    const starCount = 2000;
+    const starGeo = new THREE.BufferGeometry();
+    const starPos = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount * 3; i += 3) {
+      starPos[i] = (Math.random() - 0.5) * 120;
+      starPos[i + 1] = (Math.random() - 0.5) * 120;
+      starPos[i + 2] = (Math.random() - 0.5) * 120;
+    }
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.35, transparent: true, opacity: 0.85 });
+    scene.add(new THREE.Points(starGeo, starMat));
+
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 300);
+    camera.position.set(0, 3.8, 8.5);
+    camera.lookAt(0, 0.5, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const sunLight = new THREE.DirectionalLight(0xfffbeb, 1.5);
+    sunLight.position.set(15, 20, 10);
+    scene.add(sunLight);
+
+    // Mô hình 3D Tàu Pioneer 10 (Ăng-ten đĩa khổng lồ & Tấm bảng vàng)
+    const pGroup = new THREE.Group();
+    scene.add(pGroup);
+
+    // Đĩa ăng-ten 2.74m
+    const dish = new THREE.Mesh(
+      new THREE.ConeGeometry(1.6, 0.6, 24, 1, true),
+      new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.9, roughness: 0.2, side: THREE.DoubleSide })
+    );
+    dish.rotation.x = Math.PI;
+    pGroup.add(dish);
+
+    // Thân tàu chính
+    const pBody = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.35, 0.35, 0.9, 12),
+      new THREE.MeshStandardMaterial({ color: 0xb45309, metalness: 0.7, roughness: 0.3 })
+    );
+    pBody.position.z = -0.65;
+    pBody.rotation.x = Math.PI / 2;
+    pGroup.add(pBody);
+
+    // Tấm bảng mạ vàng Sagan (Pioneer Plaque)
+    const plaque = new THREE.Mesh(
+      new THREE.BoxGeometry(0.55, 0.38, 0.02),
+      new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.95, roughness: 0.15 })
+    );
+    plaque.position.set(0, -0.28, -0.45);
+    plaque.rotation.x = 0.25;
+    pGroup.add(plaque);
+
+    // =========================================================
+    // 4. MECHANIC A: ĐỊNH LUẬT NGHỊCH ĐẢO BÌNH PHƯƠNG (1/r^2)
+    // =========================================================
+    const sliderAu = document.getElementById('slider-au');
+    const distanceReadout = document.getElementById('distance-readout');
+    const signalIntensityVal = document.getElementById('signal-intensity-val');
+
+    sliderAu.addEventListener('input', () => {
+      const r = parseInt(sliderAu.value, 10);
+      distanceReadout.textContent = `r = ${r} AU`;
+      const intensity = 1 / (r * r);
+      signalIntensityVal.textContent = intensity < 0.001 ? intensity.toExponential(2) : intensity.toFixed(4);
+
+      // Visual camera drift theo khoảng cách
+      pGroup.position.z = - (r - 1) * 0.04;
+      triggerHaptic(10, 'Haptic: Vi mô trôi dạt (10ms)');
+    });
+
+    function alignDeepSpaceNetwork() {
+      spaceAudio.playCosmicBau(196.00, 392.00);
+      triggerHaptic(50, 'Haptic: Xoay DSN bắt tín hiệu (50ms)');
+      alert('📡 Tuyệt vời! Deep Space Network đã bắt trọn nốt nhạc yếu ớt từ khoảng cách xa!');
+    }
+
+    // =========================================================
+    // 5. MECHANIC B: PIONEER PLAQUE INTERACTIVE BUILDER
+    // =========================================================
+    let selectedSymbols = new Set();
+
+    function toggleSymbol(el, symKey) {
+      if (selectedSymbols.has(symKey)) {
+        selectedSymbols.delete(symKey);
+        el.classList.remove('selected');
+      } else {
+        selectedSymbols.add(symKey);
+        el.classList.add('selected');
+      }
+      document.getElementById('plaque-status').textContent = `Đã chọn: ${selectedSymbols.size} / 3 biểu tượng`;
+      spaceAudio.playTubeNote(440 + selectedSymbols.size * 90, 0.3);
+      triggerHaptic(20, 'Haptic: Chọn biểu tượng (20ms)');
+    }
+
+    function launchPlaque() {
+      if (selectedSymbols.size < 3) {
+        alert('⚠️ Hãy chọn đủ 3 biểu tượng đại diện cho loài người trước khi phóng tấm bảng!');
+        return;
+      }
+      spaceAudio.playCosmicBau(261.63, 523.25);
+      triggerHaptic(150, 'Haptic: Phóng Tấm bảng mạ vàng!');
+      plaque.material.color.setHex(0xffffff); // Rực sáng vàng kim
+      setTimeout(() => {
+        document.getElementById('end-modal').classList.remove('hidden');
+      }, 1400);
+    }
+
+    // Modal & Audio Toggles
+    document.getElementById('btn-start').addEventListener('click', () => {
+      document.getElementById('start-modal').classList.add('hidden');
+      spaceAudio.init();
+      spaceAudio.playArpeggio(100);
+    });
+
+    document.getElementById('btn-close-end').addEventListener('click', () => {
+      document.getElementById('end-modal').classList.add('hidden');
+    });
+
+    document.getElementById('audio-pill').addEventListener('click', () => {
+      spaceAudio.isEnabled = !spaceAudio.isEnabled;
+      const pill = document.getElementById('audio-pill');
+      const lbl = document.getElementById('audio-label');
+      if (spaceAudio.isEnabled) {
+        pill.classList.add('active');
+        lbl.textContent = "Đàn T'rưng & Đàn Bầu: Bật";
+        spaceAudio.playArpeggio(100);
+      } else {
+        pill.classList.remove('active');
+        lbl.textContent = 'Âm thanh: Tắt';
+      }
+    });
+
+    // Routing SPA 5 chương
+    document.querySelectorAll('.route-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const ch = btn.dataset.ch;
+        if (ch !== '5') {
+          e.preventDefault();
+          alert(`Hệ thống xác nhận tuyến đường sang Chương ${ch} (#ch${ch}). Hiện tại bạn đang ở Chương 5: Pioneer 10.`);
+        }
+      });
+    });
+
+    // Animation Loop 3D
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const elapsed = clock.getElapsedTime();
+      pGroup.rotation.y = elapsed * 0.25;
+      pGroup.rotation.z = Math.sin(elapsed * 0.5) * 0.08;
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>

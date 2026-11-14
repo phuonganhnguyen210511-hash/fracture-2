@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minigame 02: The Last Whisper - Giải Mã Tín Hiệu Pioneer 10</title>
+    <style>
+        :root {
+            --space-dark: #07030f;
+            --panel-bg: #150a21;
+            --accent-gold: #f39c12;
+            --accent-cyan: #00cec9;
+            --text-light: #f5f6fa;
+            --pioneer-red: #d14931;
+            --border-purple: #4a235a;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--space-dark);
+            color: var(--text-light);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 860px;
+            width: 100%;
+            background: var(--panel-bg);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            border: 2px solid var(--accent-gold);
+            text-align: center;
+        }
+        h1 {
+            color: var(--accent-gold);
+            font-size: 1.45rem;
+            margin-top: 0;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            font-size: 0.85rem;
+            color: #b2bec3;
+            margin-bottom: 20px;
+        }
+
+        /* Màn hình sóng vô tuyến giả lập */
+        .radar-screen {
+            background: #040108;
+            border: 2px solid var(--border-purple);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 18px;
+            position: relative;
+            overflow: hidden;
+        }
+        .signal-wave {
+            font-family: monospace;
+            font-size: 1.1rem;
+            color: var(--accent-cyan);
+            letter-spacing: 3px;
+            margin-bottom: 6px;
+            text-shadow: 0 0 10px rgba(0,206,201,0.6);
+        }
+        .signal-stats {
+            font-size: 0.8rem;
+            color: #dfe6e9;
+        }
+
+        /* Khung trò chơi mảnh ghép & câu hỏi */
+        .game-box {
+            background: #201030;
+            border: 1px solid #6c3483;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 18px;
+            text-align: left;
+        }
+        .progress-indicator {
+            font-size: 0.82rem;
+            color: var(--accent-gold);
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .question-title {
+            font-size: 0.98rem;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 14px;
+            line-height: 1.5;
+        }
+
+        /* Khu vực chọn mảnh ghép tín hiệu */
+        .puzzle-instruction {
+            font-size: 0.82rem;
+            color: #a569bd;
+            margin-bottom: 8px;
+            font-style: italic;
+        }
+        .slots-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+            min-height: 42px;
+            background: #0d0414;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px dashed #8e44ad;
+            align-items: center;
+        }
+        .slot-item {
+            background: #2c1642;
+            border: 1px solid #bb8fce;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.82rem;
+            color: var(--accent-gold);
+        }
+        .fragments-pool {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .fragment-card {
+            background: #341548;
+            border: 1px solid #9b59b6;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .fragment-card:hover {
+            background: var(--pioneer-red);
+            border-color: #e74c3c;
+            transform: translateY(-2px);
+        }
+
+        /* Khung hiển thị nhật ký hành trình / Phản hồi */
+        .log-display {
+            background: #110518;
+            border: 1px solid var(--border-purple);
+            border-radius: 8px;
+            padding: 14px;
+            font-size: 0.88rem;
+            line-height: 1.6;
+            min-height: 70px;
+            color: var(--accent-cyan);
+            text-align: left;
+            margin-bottom: 18px;
+        }
+
+        /* Nút thao tác */
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+        button.btn-primary {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+        button.btn-primary:hover { background: #219653; }
+        button.btn-secondary {
+            background: #c0392b;
+            color: white;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        button.btn-secondary:hover { background: #a93226; }
+
+        /* Màn hình tổng kết điểm số */
+        .result-screen {
+            display: none;
+            background: #110518;
+            border: 2px solid var(--accent-gold);
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+        }
+        .score-display {
+            font-size: 2.6rem;
+            font-weight: bold;
+            color: var(--accent-gold);
+            margin: 10px 0;
+            text-shadow: 0 0 15px rgba(243,156,18,0.5);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📡 Minigame 02: The Last Whisper — Giải Mã Tín Hiệu Pioneer 10</h1>
+    <div class="subtitle">Giải mã <b>5 chặng mảnh tín hiệu vô tuyến</b>. Nếu trả lời sai, hệ thống sẽ hiển thị đáp án đúng trước khi sang chặng tiếp theo. Tổng điểm được tính trên thang 100[cite: 10]!</div>
+
+    <!-- Màn hình radar sóng vô tuyến -->
+    <div class="radar-screen">
+        <div class="signal-wave" id="wave-display">~ ~ ~ ... [ Đang kết nối Trạm DSN ] ... ~ ~ ~</div>
+        <div class="signal-stats" id="signal-stats">Tần số: 2.1 GHz | Định luật suy giảm: I ∝ 1/r² | Trạng thái: Sẵn sàng giải mã[cite: 10]</div>
+    </div>
+
+    <!-- Khung trò chơi chính (5 câu hỏi / 5 chặng) -->
+    <div class="game-box" id="game-container">
+        <div class="progress-indicator" id="step-indicator">CHẶNG 1 / 5: SỨ MỆNH TIÊN PHONG</div>
+        <div class="question-title" id="question-text">Đang tải dữ liệu nhiệm vụ...</div>
+        
+        <div class="puzzle-instruction">🧩 Chọn các mảnh tín hiệu bên dưới theo đúng thứ tự cấu trúc thông điệp:</div>
+        <div class="slots-container" id="slots-zone">
+            <span style="color: #636e72; font-size: 0.82rem; font-style: italic;">Các mảnh ghép sẽ hiển thị ở đây theo thứ tự bạn chọn...</span>
+        </div>
+        
+        <div class="fragments-pool" id="fragments-pool">
+            <!-- Mảnh ghép render bằng JS -->
+        </div>
+    </div>
+
+    <!-- Khung nhật ký hành trình / Phản hồi -->
+    <div class="log-display" id="log-display">
+        📝 <b>Nhật ký Trạm Không Gian Sâu (DSN):</b> Hệ thống đang lắng nghe tín hiệu yếu ớt từ biên giới Hệ Mặt Trời. Hãy hoàn thành chặng ghép mảnh đầu tiên...
+    </div>
+
+    <div class="action-buttons" id="action-controls">
+        <button class="btn-primary" onclick="verifyStage()">🔍 Xác Thực Mảnh Ghép Tín Hiệu</button>
+        <button class="btn-secondary" onclick="resetGame()">🔄 Khởi Động Lại Hệ Thống</button>
+    </div>
+
+    <!-- Màn hình kết quả tổng kết (Ẩn lúc đầu) -->
+    <div class="result-screen" id="result-screen">
+        <h2 style="color: var(--accent-gold); margin-top:0;">🏆 HOÀN THÀNH BẢN GIAO HƯỞNG CUỐI CÙNG</h2>
+        <div class="subtitle">Tiếng thì thầm từ không gian sâu thẳm đã truyền tải trọn vẹn:</div>
+        <div class="score-display" id="final-score-text">0 / 100 Điểm</div>
+        
+        <div class="log-display" id="final-evaluation-text" style="text-align: center; color: #f5f6fa;">
+            Đang đánh giá kết quả...
+        </div>
+
+        <button class="btn-primary" onclick="resetGame()">🔄 Chơi Lại Thử Thách</button>
+    </div>
+</div>
+
+<script>
+    // Dữ liệu 5 chặng tương ứng với 5 mảnh ghép tín hiệu khoa học Chương 5 (Pioneer 10)
+    const stages = [
+        {
+            title: "CHẶNG 1 / 5: VƯỢT QUA VÀNH ĐAI TIỂU HÀNH TINH",
+            waveText: "~ ~ ... [ NĂM 1972 ] ... VÀNH ĐAI TIỂU HÀNH TINH ... ~ ~",
+            question: "Ghép các mảnh tín hiệu để xác định cột mốc khởi đầu của tàu Pioneer 10:",
+            correctOrder: ["Pioneer 10", "vượt qua", "vành đai tiểu hành tinh", "năm 1972"],
+            mixedFragments: ["năm 1972", "vượt qua", "Pioneer 10", "vành đai tiểu hành tinh"],
+            logText: "🌟 <b>Mở khóa Nhật ký 1: Sứ mệnh Tiên phong (1972):</b> Pioneer 10 là cỗ máy nhân tạo đầu tiên bay xuyên qua vành đai tiểu hành tinh hiểm trở để ghé thăm Sao Mộc[cite: 10]."
+        },
+        {
+            title: "CHẶNG 2 / 5: THÔNG ĐIỆP GỬI NGÀN NĂM",
+            waveText: "... [ CARL SAGAN ] ... BẢN ĐỒ PULSAR ... HỆ MẶT TRỜI ...",
+            question: "Ghép các mảnh tín hiệu mô tả vật phẩm lưu niệm lịch sử trên tàu:",
+            correctOrder: ["Mang theo", "tấm bảng mạ vàng", "thông điệp Trái Đất", "bản đồ Pulsar"],
+            mixedFragments: ["thông điệp Trái Đất", "bản đồ Pulsar", "Mang theo", "tấm bảng mạ vàng"],
+            logText: "🌟 <b>Mở khóa Nhật ký 2: Di sản Trường tồn:</b> Mang trên ngực tấm bảng mạ vàng do Carl Sagan thiết kế chứa sơ đồ nguyên tử Hydro và vị trí Hệ Mặt Trời theo dải xung vô tuyến Pulsar[cite: 10]."
+        },
+        {
+            title: "CHẶNG 3 / 5: ĐỊNH LUẬT NGHỊCH ĐẢO BÌNH PHƯƠNG",
+            waveText: "... [ 1 / R² ] ... CƯỜNG ĐỘ SÓNG RADIO ... 80 AU ...",
+            question: "Ghép các mảnh tín hiệu phản ánh quy luật vật lý suy giảm tín hiệu vô tuyến:",
+            correctOrder: ["Cường độ tín hiệu", "giảm theo", "định luật 1/r²", "khoảng cách 80 AU"],
+            mixedFragments: ["định luật 1/r²", "khoảng cách 80 AU", "Cường độ tín hiệu", "giảm theo"],
+            logText: "🌟 <b>Mở khóa Nhật ký 3: Thách thức Khoa học:</b> Cường độ sóng radio suy giảm theo định luật nghịch đảo bình phương (I ∝ 1/r²), khiến việc thu nhận tín hiệu ở khoảng cách xa trở nên cực kỳ khó khăn[cite: 10]."
+        },
+        {
+            title: "CHẶNG 4 / 5: LẮNG NGHE TỪ TRẠM KHÔNG GIAN SÂU (DSN)",
+            waveText: "~~~ 23/1/2003: 12 TỶ KM (~80 AU) ... ĐĨA ĂNG-TEN 70M ~~~",
+            question: "Ghép các mảnh tín hiệu về khoảnh khắc thu nhận tín hiệu cuối cùng:",
+            correctOrder: ["Thu nhận", "tín hiệu cuối cùng", "ngày 23/1/2003", "tại Trạm DSN"],
+            mixedFragments: ["ngày 23/1/2003", "tại Trạm DSN", "Thu nhận", "tín hiệu cuối cùng"],
+            logText: "🌟 <b>Mở khóa Nhật ký 4: Tiếng thì thầm cuối cùng:</b> Ngày 23/1/2003, đĩa ăng-ten khổng lồ 70m của Mạng Không gian Sâu (DSN) đã bắt trọn tiếng thì thầm cuối cùng từ khoảng cách 80 AU (12 tỷ km)[cite: 10]."
+        },
+        {
+            title: "CHẶNG 5 / 5: HÀNH TRÌNH VƯƠN RA DẢI NGÂN HÀ",
+            waveText: "~~~ HƯỚNG VỀ SAO ALDEBARAN ... 2 TRIỆU NĂM HÀNH TRÌNH ~~~",
+            question: "Ghép các mảnh tín hiệu kết thúc bản giao hưởng sứ mệnh vũ trụ:",
+            correctOrder: ["Gửi lời", "thì thầm cuối cùng", "hướng về sao Aldebaran", "hành trình 2 triệu năm"],
+            mixedFragments: ["hành trình 2 triệu năm", "thì thầm cuối cùng", "hướng về sao Aldebaran", "Gửi lời"],
+            logText: "🌟 <b>Mở khóa Nhật ký 5 & Lời nhắn cuối:</b> Pioneer 10 không bị bỏ rơi, mà mang sứ mệnh tiễn đưa tri thức nhân loại lững lờ hành trình 2 triệu năm hướng về ngôi sao đỏ Aldebaran trong chòm sao Kim Ngưu[cite: 10]!"
+        }
+    ];
+
+    let currentStage = 0;
+    let score = 0;
+    let selectedFragments = [];
+
+    function initStage() {
+        if (currentStage >= stages.length) {
+            showFinalResult();
+            return;
+        }
+
+        const stage = stages[currentStage];
+        document.getElementById('step-indicator').innerText = stage.title;
+        document.getElementById('wave-display').innerText = stage.waveText;
+        document.getElementById('question-text').innerText = stage.question;
+        
+        selectedFragments = [];
+        renderSlots();
+
+        const pool = document.getElementById('fragments-pool');
+        pool.innerHTML = '';
+        stage.mixedFragments.forEach(frag => {
+            const card = document.createElement('div');
+            card.className = 'fragment-card';
+            card.innerText = frag;
+            card.onclick = () => selectFragment(frag, card);
+            pool.appendChild(card);
+        });
+    }
+
+    function selectFragment(text, element) {
+        if (selectedFragments.includes(text)) return;
+        selectedFragments.push(text);
+        element.style.opacity = '0.3';
+        element.style.pointerEvents = 'none';
+        renderSlots();
+    }
+
+    function renderSlots() {
+        const zone = document.getElementById('slots-zone');
+        zone.innerHTML = '';
+        if (selectedFragments.length === 0) {
+            zone.innerHTML = '<span style="color: #636e72; font-size: 0.82rem; font-style: italic;">Các mảnh ghép sẽ hiển thị ở đây theo thứ tự bạn chọn...</span>';
+            return;
+        }
+        selectedFragments.forEach((frag, idx) => {
+            const slot = document.createElement('div');
+            slot.className = 'slot-item';
+            slot.innerText = `${idx + 1}. ${frag}`;
+            zone.appendChild(slot);
+        });
+    }
+
+    function verifyStage() {
+        const stage = stages[currentStage];
+        if (selectedFragments.length !== stage.correctOrder.length) {
+            alert("⚠️ Vui lòng chọn đầy đủ các mảnh tín hiệu để xếp vào khung trước khi xác thực!");
+            return;
+        }
+
+        const isCorrect = selectedFragments.every((val, idx) => val === stage.correctOrder[idx]);
+        const logDisplay = document.getElementById('log-display');
+
+        if (isCorrect) {
+            score += 20; // Mỗi chặng đúng được 20 điểm -> Tổng 5 chặng = 100 điểm
+            logDisplay.innerHTML = `✅ <b>Chính xác (+20 điểm)!</b><br>` + stage.logText;
+            currentStage++;
+            
+            if (currentStage < stages.length) {
+                setTimeout(() => {
+                    initStage();
+                }, 1500);
+            } else {
+                setTimeout(() => {
+                    showFinalResult();
+                }, 1500);
+            }
+        } else {
+            // Trường hợp sai: Hiển thị đáp án đúng trước khi chuyển sang câu tiếp theo
+            const correctString = stage.correctOrder.join(" ➔ ");
+            logDisplay.innerHTML = `❌ <b>Chưa chính xác!</b><br>📌 <b>Đáp án đúng của chặng này là:</b> <span style="color: #f1c40f;">[ ${correctString} ]</span><br>` + stage.logText;
+            currentStage++;
+
+            if (currentStage < stages.length) {
+                setTimeout(() => {
+                    initStage();
+                }, 4000); // Cho người chơi thời gian đọc đáp án đúng trước khi sang câu mới
+            } else {
+                setTimeout(() => {
+                    showFinalResult();
+                }, 4000);
+            }
+        }
+    }
+
+    function showFinalResult() {
+        document.getElementById('game-container').style.display = 'none';
+        document.getElementById('action-controls').style.display = 'none';
+        document.getElementById('log-display').style.display = 'none';
+        
+        const resultScreen = document.getElementById('result-screen');
+        resultScreen.style.display = 'block';
+
+        document.getElementById('final-score-text').innerText = `${score} / 100 Điểm`;
+
+        let evaluation = "";
+        if (score === 100) {
+            evaluation = "🌟 <b>Đánh giá Hoàn hảo (100/100):</b> Bạn đã giải mã thành công toàn bộ các tầng sóng vô tuyến, thấu hiểu định luật 1/r² và sứ mệnh lịch sử của Pioneer 10[cite: 10]. Sẵn sàng đạt điểm tuyệt đối trước hội đồng chấm thi NASA Space Apps Challenge!";
+        } else if (score >= 60) {
+            evaluation = `👍 <b>Đánh giá Khá Tốt (${score}/100 điểm):</b> Bạn đã nắm bắt phần lớn thông điệp hành trình của Pioneer 10[cite: 10]. Hãy xem lại các đáp án đúng được hướng dẫn ở các chặng vừa qua để hoàn thiện báo cáo nhóm trưởng!`;
+        } else {
+            evaluation = `⚠️ <b>Đánh giá Cần cải thiện (${score}/100 điểm):</b> Bạn cần ôn lại dữ liệu khoa học Chương 5 (Pioneer 10) về mốc năm 1972, định luật 1/r² và trạm DSN[cite: 10].`;
+        }
+        document.getElementById('final-evaluation-text').innerHTML = evaluation;
+    }
+
+    function resetGame() {
+        currentStage = 0;
+        score = 0;
+        document.getElementById('game-container').style.display = 'block';
+        document.getElementById('action-controls').style.display = 'flex';
+        document.getElementById('log-display').style.display = 'block';
+        document.getElementById('result-screen').style.display = 'none';
+        document.getElementById('log-display').innerHTML = "📝 <b>Nhật ký Trạm Không Gian Sâu (DSN):</b> Hệ thống đã được thiết lập lại. Bắt đầu thu nhận tín hiệu chặng 1...";
+        initStage();
+    }
+
+    window.onload = initStage;
+</script>
+
+</body>
+</html>

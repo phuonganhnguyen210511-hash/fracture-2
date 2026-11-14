@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chương 1: Opportunity (Oppy) – Ngày mai vẫn còn một sol nữa</title>
+  <style>
+    :root {
+      --mars-bg: #3b1410;
+      --mars-horizon: #8c2d19;
+      --dust-color: #c85a32;
+      --amber: #f59e0b;
+      --red-alert: #ef4444;
+      --panel-bg: rgba(20, 10, 12, 0.85);
+      --border-glow: rgba(245, 158, 11, 0.35);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    
+    body {
+      background: linear-gradient(180deg, #1a0706 0%, var(--mars-bg) 45%, var(--mars-horizon) 100%);
+      color: #f8fafc;
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: filter 0.5s ease;
+    }
+
+    /* Bầu trời tối sầm theo độ dày quang học Tau */
+    #sky-dimmer {
+      position: fixed;
+      inset: 0;
+      background: #050202;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 40;
+      transition: opacity 0.3s ease;
+    }
+
+    /* Hạt bụi bay ngang màn hình */
+    #ambient-dust {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    /* Header điều khiển âm thanh Đàn Hồ */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 60;
+      background: rgba(15, 6, 7, 0.9);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border-glow);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .chapter-badge {
+      font-weight: 700;
+      color: var(--amber);
+      letter-spacing: 0.5px;
+      font-size: 0.95rem;
+    }
+
+    .audio-btn {
+      background: linear-gradient(135deg, #b45309, #d97706);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 0 15px rgba(217, 119, 6, 0.4);
+      transition: transform 0.2s;
+    }
+    .audio-btn:hover { transform: scale(1.04); }
+
+    /* Container Scrollytelling */
+    .scrolly-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 30px 20px 100px;
+      position: relative;
+      z-index: 20;
+    }
+
+    .scene-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-glow);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 40px;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6);
+      opacity: 0.35;
+      transform: translateY(25px);
+      transition: all 0.6s ease;
+    }
+
+    .scene-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .scene-tag {
+      display: inline-block;
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--amber);
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    /* Speech Bubbles */
+    .dialogue-box {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .bubble {
+      padding: 12px 16px;
+      border-radius: 14px;
+      max-width: 85%;
+      line-height: 1.5;
+      font-size: 0.95rem;
+    }
+    .bubble.bit { background: #1e293b; border-left: 4px solid #38bdf8; align-self: flex-start; }
+    .bubble.may { background: #271a30; border-left: 4px solid #c084fc; align-self: flex-end; }
+    .bubble.oppy { background: #2d1b12; border-left: 4px solid #f59e0b; align-self: flex-start; }
+    .speaker { font-weight: 700; font-size: 0.8rem; display: block; margin-bottom: 4px; opacity: 0.85; }
+
+    /* SCENE 1: SWIPE TO CLEAN CANVAS */
+    .wipe-stage {
+      position: relative;
+      width: 100%;
+      height: 280px;
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 18px 0;
+      background: radial-gradient(circle at center, #6b2416 0%, #240906 100%);
+      border: 1px solid #78350f;
+      user-select: none;
+    }
+
+    .oppy-reveal {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+    }
+
+    /* Minh họa SVG Rover Oppy */
+    .oppy-svg { width: 210px; height: 140px; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.7)); }
+
+    #dust-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .wipe-hint {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.7);
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      color: #fde68a;
+      pointer-events: none;
+    }
+
+    /* MECHANIC A: DRAG SOLAR PHOTON */
+    .solar-lab {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0,0,0,0.35);
+      padding: 20px;
+      border-radius: 12px;
+      margin: 16px 0;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .sun-photon {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #fef08a, #f59e0b);
+      box-shadow: 0 0 25px #f59e0b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #451a03;
+      font-weight: 800;
+      font-size: 0.8rem;
+      cursor: grab;
+      text-align: center;
+    }
+
+    .solar-panel-target {
+      flex: 1;
+      min-width: 220px;
+      border: 2px dashed #38bdf8;
+      background: rgba(14, 116, 144, 0.2);
+      border-radius: 12px;
+      padding: 18px;
+      text-align: center;
+      transition: all 0.25s;
+    }
+    .solar-panel-target.drag-over {
+      background: rgba(56, 189, 248, 0.35);
+      transform: scale(1.02);
+    }
+
+    .energy-bars { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+    .bar-row { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
+    .bar-track { flex: 1; height: 12px; background: #1e293b; border-radius: 6px; overflow: hidden; }
+    .bar-fill { height: 100%; width: 0%; transition: width 0.6s ease; }
+
+    /* MECHANIC B: TAU SLIDER & MINI GAME */
+    .tau-control {
+      background: rgba(0,0,0,0.4);
+      padding: 20px;
+      border-radius: 12px;
+      margin: 16px 0;
+    }
+    input[type="range"] {
+      width: 100%;
+      margin: 14px 0;
+      accent-color: var(--amber);
+      cursor: pointer;
+    }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .metric-box {
+      background: #180c0e;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #451a03;
+      text-align: center;
+    }
+    .metric-val { font-size: 1.3rem; font-weight: 800; color: var(--amber); }
+
+    .red-alert-banner {
+      display: none;
+      background: rgba(220, 38, 38, 0.25);
+      border: 2px solid var(--red-alert);
+      color: #fca5a5;
+      padding: 12px;
+      border-radius: 10px;
+      text-align: center;
+      font-weight: 800;
+      margin-top: 14px;
+      animation: pulseAlert 1s infinite;
+    }
+    @keyframes pulseAlert { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+    /* Subsystems Toggle (10mAh Survival) */
+    .subsystems {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .sys-btn {
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid #475569;
+      background: #1e293b;
+      color: #f8fafc;
+      cursor: pointer;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .sys-btn.on { border-color: #22c55e; background: rgba(34, 197, 94, 0.2); }
+    .sys-btn.off { border-color: #ef4444; background: rgba(239, 68, 68, 0.12); opacity: 0.7; }
+
+    /* SCENE END & REWARD */
+    .reward-box {
+      background: linear-gradient(135deg, rgba(180, 83, 9, 0.3), rgba(15, 23, 42, 0.9));
+      border: 1px solid #f59e0b;
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
+      margin-top: 20px;
+    }
+    .bracelet-icon {
+      font-size: 2.2rem;
+      display: inline-block;
+      animation: glowSpin 4s linear infinite;
+    }
+    @keyframes glowSpin { 0% { filter: drop-shadow(0 0 6px #fbbf24); } 50% { filter: drop-shadow(0 0 18px #f59e0b); } 100% { filter: drop-shadow(0 0 6px #fbbf24); } }
+  </style>
+</head>
+<body>
+
+  <div id="sky-dimmer"></div>
+  <canvas id="ambient-dust"></canvas>
+
+  <header>
+    <div class="chapter-badge">CHƯƠNG 1: OPPORTUNITY (OPPY) – "Ngày mai vẫn còn một sol nữa"</div>
+    <button class="audio-btn" id="danho-toggle" onclick="toggleDanHoAudio()">
+      🎻 Bật Nhạc Nền Đàn Hồ (Nhịp 6/8)
+    </button>
+  </header>
+
+  <div class="scrolly-container">
+
+    <!-- SCENE 1: KHỞI ĐẦU & SWIPE TO CLEAN -->
+    <section class="scene-card visible" id="scene-1">
+      <span class="scene-tag">SCENE 01 • MERIDIANI PLANUM</span>
+      <h2>Cơn Bão Bụi Đỏ & Người Tiên Phong 15 Năm</h2>
+      
+      <div class="dialogue-box">
+        <div class="bubble bit"><span class="speaker">🤖 BÍT (Hắt-xì điện tử *Bíp-xì!*)</span>"Mây ơi! Pin mình rớt vèo vèo... Bụi ăn mất nắng rồi!"</div>
+        <div class="bubble may"><span class="speaker">👧 MÂY</span>"Bình tĩnh Bít. Nhìn kìa..."</div>
+      </div>
+
+      <!-- Canvas lau bụi -->
+      <div class="wipe-stage">
+        <div class="oppy-reveal">
+          <!-- SVG Rover Opportunity 6 bánh, 2 tấm pin xòe như đôi tai -->
+          <svg class="oppy-svg" viewBox="0 0 240 150">
+            <!-- Cột camera Pancam -->
+            <rect x="115" y="25" width="10" height="45" fill="#cbd5e1"/>
+            <rect x="102" y="15" width="36" height="16" rx="4" fill="#f8fafc" stroke="#334155" stroke-width="2"/>
+            <circle cx="112" cy="23" r="4" fill="#0284c7"/>
+            <circle cx="128" cy="23" r="4" fill="#0284c7"/>
+            <!-- Hai tấm pin xòe như đôi tai -->
+            <polygon points="20,65 85,55 95,85 15,90" fill="#1e3a8a" stroke="#38bdf8" stroke-width="2"/>
+            <polygon points="220,65 155,55 145,85 225,90" fill="#1e3a8a" stroke="#38bdf8" stroke-width="2"/>
+            <!-- Thân rover -->
+            <rect x="85" y="65" width="70" height="35" rx="6" fill="#d97706"/>
+            <!-- 6 bánh xe -->
+            <circle cx="75" cy="115" r="14" fill="#1e293b" stroke="#94a3b8" stroke-width="3"/>
+            <circle cx="120" cy="118" r="14" fill="#1e293b" stroke="#94a3b8" stroke-width="3"/>
+            <circle cx="165" cy="115" r="14" fill="#1e293b" stroke="#94a3b8" stroke-width="3"/>
+          </svg>
+          <p style="color:#fde68a; font-weight:700; margin-top:6px;">ROVER OPPORTUNITY (SOL 1 → SOL 5111)</p>
+        </div>
+        <canvas id="dust-canvas"></canvas>
+        <div class="wipe-hint" id="wipe-hint">👆 Quẹt chuột hoặc ngón tay lên khung hình để lau sạch bụi đỏ (<span id="clean-pct">0</span>%)</div>
+      </div>
+
+      <div class="dialogue-box" id="oppy-greeting" style="display:none;">
+        <div class="bubble oppy"><span class="speaker">🛰️ OPPY</span>"Chào hai đứa! 15 năm rồi mới có khách ghé qua đấy."</div>
+        <div class="bubble bit"><span class="speaker">🤖 BÍT</span>"15 năm?! Kế hoạch nghe nói chỉ 90 sol (ngày Sao Hỏa)?"</div>
+        <div class="bubble oppy"><span class="speaker">🛰️ OPPY</span>"Ta gọi đó là 'thâm niên'! 45,16 km marathon chạy bằng nắng ấm."</div>
+      </div>
+    </section>
+
+    <!-- SCENE 2: MECHANIC A - BẢO TOÀN NĂNG LƯỢNG -->
+    <section class="scene-card" id="scene-2">
+      <span class="scene-tag">KHỐI KHOA HỌC 01 • BẢO TOÀN NĂNG LƯỢNG</span>
+      <h2>Tia Nắng & Định Luật Bảo Toàn ($E_{\text{in}} = E_{\text{work}} + E_{\text{heat}}$)</h2>
+      <p style="color:#cbd5e1; margin-top:8px; font-size:0.92rem;">Kéo <strong>Hạt Quang Năng</strong> từ Mặt Trời thả vào <strong>Tấm Pin Mặt Trời</strong> của Oppy (hoặc bấm trực tiếp vào hạt nắng) để nạp $E_{\text{total}} = 100\%$.</p>
+
+      <div class="solar-lab">
+        <div class="sun-photon" id="photon" draggable="true" onclick="chargeSolarPanel()">☀️ Hạt Nắng<br>(Kéo thả)</div>
+        <div class="solar-panel-target" id="panel-target">
+          <strong>🔋 Tấm Pin Quang Điện Oppy</strong>
+          <div style="font-size:0.85rem; color:#94a3b8; margin-top:4px;">Tổng năng lượng nạp: <span id="e-total" style="color:#38bdf8; font-weight:700;">0%</span></div>
+        </div>
+      </div>
+
+      <div class="energy-bars">
+        <div class="bar-row">
+          <span style="width:175px;">⚙️ Vận chuyển ($E_{\text{work}}$ - 45%):</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-work" style="background:#38bdf8;"></div></div>
+        </div>
+        <div class="bar-row">
+          <span style="width:175px;">🔥 Sưởi ấm lõi ($E_{\text{heat1}}$ - 40%):</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-heat" style="background:#f59e0b;"></div></div>
+        </div>
+        <div class="bar-row">
+          <span style="width:175px;">♨️ Tản nhiệt hao phí (15%):</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-loss" style="background:#ef4444;"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCENE 3: MECHANIC B - ĐỘ DÀY QUANG HỌC TAU & SINH TỒN -->
+    <section class="scene-card" id="scene-3">
+      <span class="scene-tag">KHỐI KHOA HỌC 02 • ĐỘ DÀY QUANG HỌC $\tau$ (TAU)</span>
+      <h2>Bão Bụi Toàn Cầu & Định Luật Beer-Lambert ($I = I_0 \cdot e^{-\tau}$)</h2>
+      <p style="color:#cbd5e1; margin-top:8px; font-size:0.92rem;">Kéo thanh trượt chỉ số độ mù khí quyển $\tau$ từ $0$ đến $11$ để quan sát cường độ ánh sáng mặt trời và sự thay đổi âm sắc Đàn Hồ.</p>
+
+      <div class="tau-control">
+        <label for="tau-slider" style="font-weight:700;">Chỉ số độ dày quang học ($\tau$): <span id="tau-val" style="color:#f59e0b; font-size:1.2rem;">0.5</span></label>
+        <input type="range" id="tau-slider" min="0" max="11" step="0.1" value="0.5" oninput="updateTau(this.value)" />
+
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <div style="font-size:0.8rem; color:#94a3b8;">Ánh sáng truyền qua ($I/I_0$)</div>
+            <div class="metric-val" id="light-pct">60.65%</div>
+          </div>
+          <div class="metric-box">
+            <div style="font-size:0.8rem; color:#94a3b8;">Âm vực Đàn Hồ</div>
+            <div class="metric-val" id="danho-octave">Trung âm (Ấm)</div>
+          </div>
+          <div class="metric-box">
+            <div style="font-size:0.8rem; color:#94a3b8;">Trạng thái Bầu Trời</div>
+            <div class="metric-val" id="sky-status">Quang đãng</div>
+          </div>
+        </div>
+
+        <div class="red-alert-banner" id="red-alert">
+          🚨 RED ALERT ($\tau \ge 5$): Ánh sáng dưới 0.7%! Bão bụi phủ kín Meridiani Planum!
+        </div>
+
+        <!-- Mini-Game Ưu Tiên Năng Lượng 10mAh -->
+        <div style="margin-top:22px; padding-top:16px; border-top:1px solid #334155;">
+          <h3 style="font-size:1rem; color:#fde68a;">⚡ Mini-Game Sinh Tồn (Pin Bít chỉ còn 10 mAh):</h3>
+          <p style="font-size:0.85rem; color:#cbd5e1; margin-top:4px;">Hãy <strong>TẮT</strong> các thiết bị ngốn điện và chỉ <strong>GIỮ LẠI</strong> 2 hệ thống sống còn để vượt qua cơn bão!</p>
+          
+          <div class="subsystems">
+            <button class="sys-btn on" id="sys-cam" onclick="toggleSys('cam')">📷 Máy ảnh Pancam <span id="st-cam">BẬT</span></button>
+            <button class="sys-btn on" id="sys-wheel" onclick="toggleSys('wheel')">⚙️ 6 Bánh xe <span id="st-wheel">BẬT</span></button>
+            <button class="sys-btn on" id="sys-heater" onclick="toggleSys('heater')">🔥 Bộ sưởi ấm <span id="st-heater">BẬT</span></button>
+            <button class="sys-btn on" id="sys-radio" onclick="toggleSys('radio')">📡 Radio liên lạc <span id="st-radio">BẬT</span></button>
+          </div>
+          <p id="survival-feedback" style="margin-top:12px; font-weight:700; font-size:0.9rem; color:#fbbf24;">Trạng thái: Đang quá tải năng lượng! Hãy tắt thiết bị không thiết yếu.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCENE END: SOL 5111 -->
+    <section class="scene-card" id="scene-4">
+      <span class="scene-tag">SCENE END • SOL 5111</span>
+      <h2>"Ngày mai vẫn còn một sol nữa..."</h2>
+      <p style="color:#cbd5e1; margin:10px 0; font-size:0.92rem;">Bão bùng lên ở cực đại $\tau = 11$. Oppy từ từ xếp cánh tay robot lại, ánh sáng hoàng hôn Sao Hỏa lặn dần.</p>
+      
+      <div class="dialogue-box">
+        <div class="bubble oppy"><span class="speaker">🛰️ OPPY (Giọng trầm ấm hòa tiếng Đàn Hồ)</span>"Nắng không đủ cho tất cả. Ta dành nó cho thứ quan trọng nhất, rồi đi ngủ. Ngày mai vẫn còn một sol nữa..."</div>
+      </div>
+
+      <div class="reward-box">
+        <div class="bracelet-icon">📿✨</div>
+        <h3 style="color:#fde68a; margin-top:8px;">🔓 MỞ KHÓA PHẦN THƯỞNG CHƯƠNG 1</h3>
+        <p style="font-size:0.9rem; color:#e2e8f0; margin-top:6px;">
+          • <strong>Audio Stem Unlocked:</strong> Giai điệu Đàn Hồ Việt Nam (Loopable Track - Nhịp 6/8)<br/>
+          • <strong>Handoff Gift:</strong> Chiếc <em>Vòng Đàn Hồ Phát Sáng</em> đã được trao lên cổ tay Mây.
+        </p>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    /* ==========================================================
+       1. WEB AUDIO API: TỔNG HỢP ÂM THANH ĐÀN HỒ TRUYỀN THỐNG VN
+       (Mô phỏng âm sắc kéo vĩ 2 dây trầm ấm, ngân rung đặc trưng)
+       ========================================================== */
+    let audioCtx = null;
+    let isPlayingDanHo = false;
+    let danHoInterval = null;
+    let octaveMultiplier = 1; // 1 = bình thường, 0.5 = hạ 1 octave khi Tau > 3
+
+    // Thang âm Ngũ cung Việt Nam (Cung Nam / Oán trầm ấm) - nhịp 6/8
+    const danHoNotes = [146.83, 174.61, 196.00, 220.00, 261.63, 220.00]; // D3, F3, G3, A3, C4, A3
+    let noteIndex = 0;
+
+    function triggerHaptic(pattern) {
+      if (navigator.vibrate) {
+        navigator.vibrate(pattern);
+      }
+    }
+
+    function playDanHoNote(freq) {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const duration = 1.1;
+
+      // Oscillator chính (Sawtooth lọc ấm mô phỏng dây đàn kéo vĩ)
+      const osc = audioCtx.createOscillator();
+      const subOsc = audioCtx.createOscillator();
+      const filter = audioCtx.createBiquadFilter();
+      const gain = audioCtx.createGain();
+
+      // Vibrato nhẹ đặc trưng ngón nhấn Đàn Hồ
+      const vibrato = audioCtx.createOscillator();
+      const vibratoGain = audioCtx.createGain();
+      vibrato.frequency.value = 5.2; // 5.2Hz rung tay
+      vibratoGain.gain.value = 3.5;
+      vibrato.connect(vibratoGain);
+      vibratoGain.connect(osc.frequency);
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq * octaveMultiplier, now);
+
+      subOsc.type = 'triangle';
+      subOsc.frequency.setValueAtTime((freq * octaveMultiplier) / 2, now);
+
+      // Lọc thông thấp tạo chất âm gỗ trầm ấm của Đàn Hồ
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(680, now);
+      filter.Q.value = 3.2;
+
+      // Đường bao tiếng kéo vĩ (Attack mềm, Sustain ngân, Release êm)
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.18, now + 0.22);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      osc.connect(filter);
+      subOsc.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start(now);
+      subOsc.start(now);
+      vibrato.start(now);
+
+      osc.stop(now + duration);
+      subOsc.stop(now + duration);
+      vibrato.stop(now + duration);
+
+      // Haptic Trigger: Rung nhẹ 100ms theo từng nốt kéo Đàn Hồ
+      triggerHaptic(100);
+    }
+
+    // Tiếng "hắt-xì" điện tử của Bít
+    function playBitSneeze() {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.exponentialRampToValueAtTime(1180, now + 0.08);
+      osc.frequency.exponentialRampToValueAtTime(220, now + 0.25);
+
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.26);
+    }
+
+    function toggleDanHoAudio() {
+      const btn = document.getElementById('danho-toggle');
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (isPlayingDanHo) {
+        clearInterval(danHoInterval);
+        isPlayingDanHo = false;
+        btn.innerHTML = '🎻 Bật Nhạc Nền Đàn Hồ (Nhịp 6/8)';
+      } else {
+        isPlayingDanHo = true;
+        btn.innerHTML = '⏸️ Đang Phát: Đàn Hồ Trầm Ấm (Nhịp 6/8)';
+        playBitSneeze();
+        playDanHoNote(danHoNotes[noteIndex]);
+        danHoInterval = setInterval(() => {
+          noteIndex = (noteIndex + 1) % danHoNotes.length;
+          playDanHoNote(danHoNotes[noteIndex]);
+        }, 950); // Nhịp 6/8 chậm rãi
+      }
+    }
+
+    /* ==========================================================
+       2. INTERACTION 01: SWIPE TO CLEAN (LAU BỤI SAO HỎA)
+       ========================================================== */
+    const dustCanvas = document.getElementById('dust-canvas');
+    const dCtx = dustCanvas.getContext('2d');
+    let isWiping = false;
+    let wipedPixels = 0;
+
+    function initDustOverlay() {
+      dustCanvas.width = dustCanvas.offsetWidth;
+      dustCanvas.height = dustCanvas.offsetHeight;
+      
+      // Phủ lớp bụi cam hồng thẫm Meridiani Planum
+      const grad = dCtx.createLinearGradient(0, 0, dustCanvas.width, dustCanvas.height);
+      grad.addColorStop(0, '#9a3412');
+      grad.addColorStop(0.5, '#c2410c');
+      grad.addColorStop(1, '#7c2d12');
+      dCtx.fillStyle = grad;
+      dCtx.fillRect(0, 0, dustCanvas.width, dustCanvas.height);
+
+      // Thêm hạt nhiễu bụi
+      for (let i = 0; i < 600; i++) {
+        dCtx.fillStyle = Math.random() > 0.5 ? 'rgba(255,200,150,0.2)' : 'rgba(60,15,5,0.3)';
+        dCtx.beginPath();
+        dCtx.arc(Math.random() * dustCanvas.width, Math.random() * dustCanvas.height, Math.random() * 4 + 1, 0, Math.PI * 2);
+        dCtx.fill();
+      }
+    }
+
+    function wipeDust(x, y) {
+      dCtx.globalCompositeOperation = 'destination-out';
+      dCtx.beginPath();
+      dCtx.arc(x, y, 34, 0, Math.PI * 2);
+      dCtx.fill();
+
+      wipedPixels += 1;
+      const pct = Math.min(100, Math.round((wipedPixels / 45) * 100));
+      document.getElementById('clean-pct').innerText = pct;
+
+      if (pct >= 65) {
+        document.getElementById('oppy-greeting').style.display = 'flex';
+        document.getElementById('wipe-hint').innerText = '✨ Đã lau sạch bụi! Oppy đã thức giấc.';
+      }
+    }
+
+    dustCanvas.addEventListener('mousedown', () => isWiping = true);
+    window.addEventListener('mouseup', () => isWiping = false);
+    dustCanvas.addEventListener('mousemove', (e) => {
+      if (!isWiping) return;
+      const rect = dustCanvas.getBoundingClientRect();
+      wipeDust(e.clientX - rect.left, e.clientY - rect.top);
+    });
+
+    dustCanvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      const rect = dustCanvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      wipeDust(touch.clientX - rect.left, touch.clientY - rect.top);
+    }, { passive: false });
+
+    /* ==========================================================
+       3. MECHANIC A: KÉO THẢ HẠT QUANG NĂNG & BẢO TOÀN NĂNG LƯỢNG
+       ========================================================== */
+    const photon = document.getElementById('photon');
+    const panelTarget = document.getElementById('panel-target');
+
+    photon.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', 'solar');
+    });
+
+    panelTarget.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      panelTarget.classList.add('drag-over');
+    });
+
+    panelTarget.addEventListener('dragleave', () => {
+      panelTarget.classList.remove('drag-over');
+    });
+
+    panelTarget.addEventListener('drop', (e) => {
+      e.preventDefault();
+      panelTarget.classList.remove('drag-over');
+      chargeSolarPanel();
+    });
+
+    function chargeSolarPanel() {
+      document.getElementById('e-total').innerText = '100% (Bảo toàn: 45% + 40% + 15%)';
+      document.getElementById('bar-work').style.width = '45%';
+      document.getElementById('bar-heat').style.width = '40%';
+      document.getElementById('bar-loss').style.width = '15%';
+      triggerHaptic([60, 40, 60]);
+    }
+
+    /* ==========================================================
+       4. MECHANIC B: ĐỘ DÀY QUANG HỌC TAU & MINI-GAME SINH TỒN
+       ========================================================== */
+    let dustDensity = 40;
+
+    function updateTau(val) {
+      const tau = parseFloat(val);
+      document.getElementById('tau-val').innerText = tau.toFixed(1);
+
+      // Định luật Beer-Lambert: I = I0 * e^(-tau)
+      const transmittance = Math.exp(-tau) * 100;
+      document.getElementById('light-pct').innerText = transmittance < 0.01 ? '< 0.01%' : transmittance.toFixed(2) + '%';
+
+      // Làm tối bầu trời theo tỷ lệ nghịch ánh sáng
+      const darkness = Math.min(0.82, (1 - Math.exp(-tau)) * 0.85);
+      document.getElementById('sky-dimmer').style.opacity = darkness;
+
+      // Tăng mật độ bão bụi
+      dustDensity = Math.round(40 + tau * 22);
+
+      // Khi Tau > 3: Đàn Hồ hạ 1 octave trầm sâu
+      if (tau > 3) {
+        octaveMultiplier = 0.5;
+        document.getElementById('danho-octave').innerText = 'Trầm sâu (-1 Octave)';
+        document.getElementById('sky-status').innerText = 'Bão bụi dày đặc';
+      } else {
+        octaveMultiplier = 1.0;
+        document.getElementById('danho-octave').innerText = 'Trung âm (Ấm)';
+        document.getElementById('sky-status').innerText = 'Quang đãng';
+      }
+
+      // Khi Tau >= 5: RED ALERT & Rung dồn dập
+      const alertBox = document.getElementById('red-alert');
+      if (tau >= 5) {
+        alertBox.style.display = 'block';
+        document.getElementById('sky-status').innerText = 'TỐI ĐEN (RED ALERT)';
+        triggerHaptic([120, 60, 120, 60, 200]);
+      } else {
+        alertBox.style.display = 'none';
+      }
+    }
+
+    // Mini-game 10mAh
+    const sysState = { cam: true, wheel: true, heater: true, radio: true };
+
+    function toggleSys(key) {
+      sysState[key] = !sysState[key];
+      const btn = document.getElementById('sys-' + key);
+      const label = document.getElementById('st-' + key);
+      
+      if (sysState[key]) {
+        btn.className = 'sys-btn on';
+        label.innerText = 'BẬT';
+      } else {
+        btn.className = 'sys-btn off';
+        label.innerText = 'TẮT';
+      }
+
+      const fb = document.getElementById('survival-feedback');
+      if (!sysState.cam && !sysState.wheel && sysState.heater && sysState.radio) {
+        fb.style.color = '#4ade80';
+        fb.innerText = '✅ CHÍNH XÁC! Đã tắt Máy ảnh & Bánh xe, giữ Bộ sưởi + Radio. Oppy sống sót qua bão!';
+        triggerHaptic([80, 50, 150]);
+      } else if (!sysState.heater || !sysState.radio) {
+        fb.style.color = '#f87171';
+        fb.innerText = '❌ NGUY HIỂM! Nếu tắt Bộ sưởi hoặc Radio, Oppy sẽ đóng băng và mất liên lạc!';
+      } else {
+        fb.style.color = '#fbbf24';
+        fb.innerText = '⚠️ Quá tải 10 mAh! Hãy TẮT Máy ảnh và 6 Bánh xe.';
+      }
+    }
+
+    /* ==========================================================
+       5. BỤI BAY NGANG MÀN HÌNH & SCROLLYTELLING OBSERVER
+       ========================================================== */
+    const ambCanvas = document.getElementById('ambient-dust');
+    const aCtx = ambCanvas.getContext('2d');
+    let particles = [];
+
+    function resizeAmbient() {
+      ambCanvas.width = window.innerWidth;
+      ambCanvas.height = window.innerHeight;
+    }
+
+    function createParticles() {
+      particles = Array.from({ length: 280 }, () => ({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        r: Math.random() * 2.5 + 0.8,
+        speed: Math.random() * 3.5 + 1.5
+      }));
+    }
+
+    function animateDust() {
+      aCtx.clearRect(0, 0, ambCanvas.width, ambCanvas.height);
+      aCtx.fillStyle = 'rgba(249, 115, 22, 0.32)';
+      const activeCount = Math.min(particles.length, dustDensity);
+      for (let i = 0; i < activeCount; i++) {
+        const p = particles[i];
+        p.x += p.speed;
+        p.y += Math.sin(p.x * 0.01) * 0.4;
+        if (p.x > ambCanvas.width) p.x = 0;
+        aCtx.beginPath();
+        aCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        aCtx.fill();
+      }
+      requestAnimationFrame(animateDust);
+    }
+
+    // IntersectionObserver cho Scrollytelling
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.2 });
+
+    document.querySelectorAll('.scene-card').forEach(card => observer.observe(card));
+
+    window.addEventListener('load', () => {
+      initDustOverlay();
+      resizeAmbient();
+      createParticles();
+      animateDust();
+    });
+    window.addEventListener('resize', resizeAmbient);
+  </script>
+</body>
+</html>

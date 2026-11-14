@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trạm Thực Hành & Chương 4: Viking 1 – Quản lý RAM & Lỗi Ghi Đè</title>
+  <style>
+    :root {
+      --bg-crt: #080c09;
+      --panel-bg: rgba(10, 18, 12, 0.92);
+      --accent-green: #22c55e;
+      --accent-amber: #f59e0b;
+      --accent-cyan: #38bdf8;
+      --text-main: #f0fdf4;
+      --text-muted: #86efac;
+      --border-glass: rgba(34, 197, 94, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      background-color: var(--bg-crt);
+      color: var(--text-main);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* Hiệu ứng màn hình CRT scanline & nhiễu hạt hoài cổ 1976 */
+    body::before {
+      content: " ";
+      display: block;
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.35) 50%);
+      background-size: 100% 4px;
+      z-index: 100;
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    #canvas-container {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+    }
+
+    /* Global Routing Nav Bar */
+    .global-router {
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 30;
+      background: rgba(6, 15, 8, 0.92);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-glass);
+      border-radius: 999px;
+      padding: 6px 14px;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.8);
+    }
+
+    .route-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .route-btn:hover {
+      color: #fff;
+      background: rgba(34, 197, 94, 0.15);
+    }
+
+    .route-btn.active {
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      color: #000;
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.6);
+    }
+
+    /* HUD Header */
+    .hud-header {
+      position: fixed;
+      top: 58px;
+      left: 18px;
+      right: 18px;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      pointer-events: none;
+    }
+
+    .chapter-badge {
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-glass);
+      padding: 10px 16px;
+      border-radius: 12px;
+      pointer-events: auto;
+    }
+
+    .chapter-badge h1 {
+      font-size: 1.05rem;
+      color: var(--accent-green);
+      margin-bottom: 3px;
+    }
+
+    .chapter-badge p {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+    }
+
+    .telemetry-pills {
+      display: flex;
+      gap: 8px;
+      pointer-events: auto;
+    }
+
+    .pill {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-glass);
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    .pill .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+
+    .pill.active .dot {
+      background: var(--accent-green);
+      box-shadow: 0 0 8px var(--accent-green);
+    }
+
+    /* Dialogue Box */
+    .dialogue-box {
+      position: fixed;
+      top: 130px;
+      left: 18px;
+      width: min(390px, calc(100vw - 36px));
+      background: var(--panel-bg);
+      border: 1px solid var(--border-glass);
+      border-radius: 14px;
+      padding: 14px 16px;
+      z-index: 10;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7);
+    }
+
+    .speaker-tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 3px 9px;
+      border-radius: 5px;
+      margin-bottom: 6px;
+    }
+
+    .speaker-bit { background: #7c3aed; color: #fff; }
+    .speaker-viking { background: #16a34a; color: #000; }
+    .speaker-may { background: #db2777; color: #fff; }
+
+    .dialogue-text {
+      font-size: 0.88rem;
+      line-height: 1.45;
+      color: #e2e8f0;
+      min-height: 40px;
+    }
+
+    .dialogue-controls {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .step-indicator {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .btn-sm {
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      color: #000;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    /* Core Mechanics Dock (Bottom Split) */
+    .mechanics-dock {
+      position: fixed;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(1080px, calc(100vw - 24px));
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 14px;
+      z-index: 10;
+    }
+
+    @media (max-width: 860px) {
+      .mechanics-dock {
+        grid-template-columns: 1fr;
+        max-height: 54vh;
+        overflow-y: auto;
+      }
+    }
+
+    .mech-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-glass);
+      border-radius: 16px;
+      padding: 14px 16px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85);
+    }
+
+    .mech-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    .mech-title {
+      font-size: 0.86rem;
+      font-weight: 800;
+      color: var(--accent-green);
+    }
+
+    /* Mechanic A: RAM 18KB Allocation Grid */
+    .ram-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+
+    .ram-cell {
+      background: rgba(0, 0, 0, 0.55);
+      border: 1px dashed rgba(34, 197, 94, 0.4);
+      border-radius: 6px;
+      height: 42px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      transition: all 0.2s;
+    }
+
+    .ram-cell.allocated {
+      border-style: solid;
+      background: rgba(34, 197, 94, 0.2);
+      color: #86efac;
+    }
+
+    .ram-cell.antenna-locked {
+      border-color: #f59e0b;
+      background: rgba(245, 158, 11, 0.22);
+      color: #fde047;
+      border-style: solid;
+    }
+
+    .ram-tools {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 0.75rem;
+    }
+
+    .task-btn {
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid var(--accent-green);
+      color: #fff;
+      padding: 5px 9px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .task-btn:hover { background: rgba(34, 197, 94, 0.35); }
+
+    /* Mechanic B: Overwrite Bug & Testbed Simulation */
+    .testbed-console {
+      background: rgba(0, 0, 0, 0.65);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 0.78rem;
+    }
+
+    .console-screen {
+      background: #020617;
+      border-radius: 6px;
+      padding: 8px;
+      height: 78px;
+      overflow-y: auto;
+      color: var(--accent-cyan);
+      font-family: monospace;
+      margin-bottom: 8px;
+      line-height: 1.35;
+    }
+
+    .testbed-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Modals */
+    .overlay-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 10, 5, 0.88);
+      backdrop-filter: blur(8px);
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      transition: opacity 0.35s ease;
+    }
+
+    .overlay-modal.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .modal-card {
+      background: linear-gradient(160deg, #0f2214, #060e08);
+      border: 1px solid var(--accent-green);
+      border-radius: 20px;
+      max-width: 480px;
+      width: 100%;
+      padding: 26px;
+      text-align: center;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.9);
+    }
+
+    .modal-card h2 {
+      color: var(--accent-green);
+      font-size: 1.35rem;
+      margin-bottom: 10px;
+    }
+
+    .modal-card p {
+      color: #cbd5e1;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      margin-bottom: 18px;
+    }
+
+    .reward-box {
+      background: rgba(34, 197, 94, 0.12);
+      border: 1px dashed var(--accent-green);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 18px;
+      text-align: left;
+      font-size: 0.84rem;
+      color: #bbf7d0;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      color: #000;
+      border: none;
+      padding: 11px 24px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <!-- Global Router Navigation -->
+  <nav class="global-router" aria-label="Điều hướng hệ thống">
+    <a href="#ch1" class="route-btn" data-ch="1">Ch.1 Viking</a>
+    <a href="#ch2" class="route-btn" data-ch="2">Ch.2 Ingenuity</a>
+    <a href="#ch3" class="route-btn" data-ch="3">Ch.3 Sojourner</a>
+    <a href="#ch4" class="route-btn active" data-ch="4">Ch.4 Viking 1</a>
+    <a href="#ch5" class="route-btn" data-ch="5">Ch.5 Perseverance</a>
+  </nav>
+
+  <div id="canvas-container"></div>
+
+  <!-- Start Modal -->
+  <div class="overlay-modal" id="start-modal">
+    <div class="modal-card">
+      <div style="font-size: 2.8rem; margin-bottom: 8px;">📺🪕</div>
+      <h2>TRẠM THỰC HÀNH & CHƯƠNG 4: VIKING 1</h2>
+      <p>"Cái đầu tiên luôn khó nhất – và vui nhất" (Chryse Planitia, 1976)<br>
+      Trải nghiệm màn hình CRT vintage, quản lý RAM $18\text{ KB}$, thử nghiệm lỗi ghi đè ăng-ten và thưởng thức giai điệu <strong>Đàn Tranh & Đàn Bầu Việt Nam</strong> hoài cổ!</p>
+      <button class="btn-primary" id="btn-start">Khởi Động Trạm Thực Hành & Bật Nhạc</button>
+    </div>
+  </div>
+
+  <!-- End Modal -->
+  <div class="overlay-modal hidden" id="end-modal">
+    <div class="modal-card">
+      <div style="font-size: 2.8rem; margin-bottom: 8px;">🔓✨</div>
+      <h2>HOÀN THÀNH CHƯƠNG 4</h2>
+      <p style="font-style: italic; color: #bbf7d0;">
+        <strong>VIKING 1:</strong> "Một lỗi nhỏ không xóa được giá trị của hành trình. Hãy luôn học từ nó và giữ một bản sao."
+      </p>
+      <div class="reward-box">
+        <div>🔓 <strong>Unlock Stem:</strong> Đàn Tranh & Đàn Bầu Việt Nam (Tông trầm hoài cổ)</div>
+        <div style="margin-top: 5px;">✅ <strong>Trạng thái hệ thống:</strong> Sẵn sàng chuyển tiếp sang Chương 5</div>
+      </div>
+      <button class="btn-primary" id="btn-close-end">Tiếp tục quan sát Chryse Planitia 3D</button>
+    </div>
+  </div>
+
+  <!-- HUD Header -->
+  <header class="hud-header">
+    <div class="chapter-badge">
+      <h1>CHƯƠNG 4: VIKING 1 – "Cái đầu tiên luôn khó nhất"</h1>
+      <p>Bối cảnh: Chryse Planitia (1976) • Quản lý RAM 18KB & Lỗi ghi đè ăng-ten</p>
+    </div>
+    <div class="telemetry-pills">
+      <div class="pill active" id="audio-pill">
+        <span class="dot"></span>
+        <span id="audio-label">Đàn Tranh & Đàn Bầu: Bật</span>
+      </div>
+      <div class="pill" id="haptic-pill">
+        <span class="dot"></span>
+        <span id="haptic-label">Haptic: Cassette 50ms</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Story Dialogue Box -->
+  <aside class="dialogue-box">
+    <span class="speaker-tag speaker-bit" id="speaker-tag">BIT</span>
+    <div class="dialogue-text" id="dialogue-text">"Ơ sao ảnh mờ thế? Lại còn chụp cái hình tròn tròn gì kia?"</div>
+    <div class="dialogue-controls">
+      <span class="step-indicator" id="step-indicator">Thoại 1 / 4</span>
+      <button class="btn-sm" id="btn-next-dialogue">Tiếp theo ▸</button>
+    </div>
+  </aside>
+
+  <!-- Core Mechanics Dock -->
+  <section class="mechanics-dock">
+    <!-- Mechanic A: RAM 18KB Allocation -->
+    <div class="mech-card">
+      <div class="mech-header">
+        <span class="mech-title">💾 Mechanic A: Phân Bổ RAM (18 KB)</span>
+        <span id="ram-status" style="font-size: 0.75rem; color: #fde047;">Đã dùng: 2 / 18 KB</span>
+      </div>
+      <div class="ram-grid" id="ram-grid">
+        <!-- 18 ô nhớ -->
+      </div>
+      <div class="ram-tools">
+        <button class="task-btn" onclick="allocateTask('Cam', 4)">+ Máy Ảnh (4KB)</button>
+        <button class="task-btn" onclick="allocateTask('Arm', 3)">+ Cánh Tay (3KB)</button>
+        <button class="task-btn" onclick="allocateTask('Met', 2)">+ Thời Tiết (2KB)</button>
+        <button class="task-btn" onclick="resetRAM()" style="background: rgba(239,68,68,0.22); border-color:#ef4444;">Xóa RAM</button>
+      </div>
+    </div>
+
+    <!-- Mechanic B: Overwrite Bug & Testbed Simulation -->
+    <div class="mech-card">
+      <div class="mech-header">
+        <span class="mech-title">🛠️ Mechanic B: Lỗi Ghi Đè Ăng-ten (1982)</span>
+        <span style="font-size: 0.72rem; color: #38bdf8;">RAM[pointer] &larr; Patch</span>
+      </div>
+      <div class="testbed-console">
+        <div class="console-screen" id="console-screen">
+          [SYSTEM 1976] Trạm Viking 1 sẵn sàng nhận lệnh...<br>
+          [TESTBED] Hãy kiểm tra bản sao dưới đất trước khi gửi lệnh thật!
+        </div>
+        <div class="testbed-actions">
+          <button class="task-btn" style="background: #0284c7; border-color:#38bdf8;" onclick="runTestbed(false)">🧪 Thử Testbed</button>
+          <button class="task-btn" style="background: #16a34a; border-color:#22c55e;" onclick="sendRealCommand()">🚀 Gửi Lệnh Thật</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // =========================================================
+    // 1. NHẠC CỤ DÂN TỘC VIỆT NAM: ĐÀN TRANH & ĐÀN BẦU (WEB AUDIO)
+    // =========================================================
+    class DanTranhBauAudio {
+      constructor() {
+        this.ctx = null;
+        this.isEnabled = true;
+        // Ngũ cung Việt Nam trầm ấm (Pentatonic scale)
+        this.notes = [130.81, 155.56, 174.61, 196.00, 233.08, 261.63, 311.13]; // C3, Eb3, F3, G3, Bb3, C4, Eb4
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioCtx();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      // Âm thanh Đàn Tranh (Gảy dây tơ/kim loại luyến láy hoài cổ)
+      playTranhNote(noteIdx = 0, duration = 0.7) {
+        if (!this.isEnabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const freq = this.notes[noteIdx % this.notes.length];
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+
+        // Pitch bend nhấn dây đàn tranh
+        osc.frequency.setValueAtTime(freq * 0.95, now);
+        osc.frequency.exponentialRampToValueAtTime(freq, now + 0.09);
+        osc.frequency.setValueAtTime(freq, now + duration * 0.65);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.97, now + duration);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.45, now + 0.025);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + duration);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + duration + 0.04);
+      }
+
+      // Âm thanh Đàn Bầu (Ngân dài sâu lắng với cần câu đàn)
+      playBauGlissando(startFreq = 130.81, targetFreq = 261.63, duration = 1.1) {
+        if (!this.isEnabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+
+        osc.frequency.setValueAtTime(startFreq, now);
+        osc.frequency.exponentialRampToValueAtTime(targetFreq, now + duration * 0.5);
+        osc.frequency.exponentialRampToValueAtTime(startFreq, now + duration);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.5, now + 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + duration);
+
+        // Kỹ thuật rung ngân (Vibrato) của đàn bầu
+        const lfo = this.ctx.createOscillator();
+        const lfoGain = this.ctx.createGain();
+        lfo.frequency.value = 5.2;
+        lfoGain.gain.value = 10;
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+
+        lfo.start(now);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        lfo.stop(now + duration);
+        osc.start(now);
+        osc.stop(now + duration + 0.05);
+      }
+
+      playNostalgicChord() {
+        if (!this.isEnabled) return;
+        [0, 2, 4, 6].forEach((n, idx) => {
+          setTimeout(() => {
+            this.playTranhNote(n, 1.2);
+          }, idx * 200);
+        });
+        setTimeout(() => {
+          this.playBauGlissando(130.81, 261.63, 1.5);
+        }, 800);
+      }
+    }
+
+    const folkAudio = new DanTranhBauAudio();
+
+    function triggerHaptic(ms, label) {
+      const pill = document.getElementById('haptic-pill');
+      const lbl = document.getElementById('haptic-label');
+      pill.classList.add('active');
+      lbl.textContent = label;
+      if (navigator.vibrate) navigator.vibrate(ms);
+      setTimeout(() => {
+        pill.classList.remove('active');
+        lbl.textContent = 'Haptic: Cassette 50ms';
+      }, Math.max(200, ms + 50));
+    }
+
+    // =========================================================
+    // 2. KỊCH BẢN HỘI THOẠI
+    // =========================================================
+    const dialogues = [
+      { speaker: "BIT", css: "speaker-bit", text: '"Ơ sao ảnh mờ thế? Lại còn chụp cái hình tròn tròn gì kia?"' },
+      { speaker: "VIKING 1", css: "speaker-viking", text: '"Đó là bức ảnh đầu tiên trên mặt đất Sao Hỏa! Còn cái tròn tròn... là chân tôi đấy!"' },
+      { speaker: "MÂY", css: "speaker-may", text: '"Bác chụp chân mình trước sao?"' },
+      { speaker: "VIKING 1", css: "speaker-viking", text: '"Phải xem mình đứng vững không đã chứ, cô bé! Hãy thử quản lý bộ nhớ 18KB và tránh lỗi ghi đè ăng-ten nhé."' }
+    ];
+    let dialogueIdx = 0;
+
+    document.getElementById('btn-next-dialogue').addEventListener('click', () => {
+      dialogueIdx = (dialogueIdx + 1) % dialogues.length;
+      const d = dialogues[dialogueIdx];
+      const tag = document.getElementById('speaker-tag');
+      tag.textContent = d.speaker;
+      tag.className = `speaker-tag ${d.css}`;
+      document.getElementById('dialogue-text').textContent = d.text;
+      document.getElementById('step-indicator').textContent = `Thoại ${dialogueIdx + 1} / 4`;
+      folkAudio.playTranhNote(dialogueIdx + 1, 0.5);
+    });
+
+    // =========================================================
+    // 3. THREE.JS 3D SCENE: CHRYSE PLANITIA (1976) & VIKING 1 LANDER
+    // =========================================================
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x38220f); // Màu đất đỏ Chryse Planitia hoài cổ
+    scene.fog = new THREE.FogExp2(0x38220f, 0.024);
+
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200);
+    camera.position.set(0, 4.2, 9.2);
+    camera.lookAt(0, 1.1, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    container.appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0xffedd5, 0.7));
+    const sun = new THREE.DirectionalLight(0xfffbeb, 1.4);
+    sun.position.set(12, 20, 10);
+    sun.castShadow = true;
+    scene.add(sun);
+
+    // Mặt đất Chryse Planitia (1976)
+    const groundGeo = new THREE.PlaneGeometry(120, 120, 50, 50);
+    groundGeo.rotateX(-Math.PI / 2);
+    const pos = groundGeo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const z = pos.getZ(i);
+      pos.setY(i, Math.sin(x * 0.3) * Math.cos(z * 0.3) * 0.28);
+    }
+    groundGeo.computeVertexNormals();
+    scene.add(new THREE.Mesh(groundGeo, new THREE.MeshStandardMaterial({ color: 0x9a3412, roughness: 0.9 })));
+
+    // Mô hình Lander Viking 1 & Ăng-ten định vị
+    const vGroup = new THREE.Group();
+    scene.add(vGroup);
+
+    const body = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.1, 1.3, 0.6, 8),
+      new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.7, roughness: 0.3 })
+    );
+    body.position.y = 1.2;
+    vGroup.add(body);
+
+    const antenna = new THREE.Mesh(
+      new THREE.ConeGeometry(0.35, 0.9, 12),
+      new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.8 })
+    );
+    antenna.position.set(0.6, 1.85, 0);
+    vGroup.add(antenna);
+
+    const legMat = new THREE.MeshStandardMaterial({ color: 0x334155 });
+    [[-1.1, -1.1], [1.1, -1.1], [0, 1.3]].forEach(([lx, lz]) => {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.6, 8), legMat);
+      leg.position.set(lx, 0.8, lz);
+      leg.rotation.z = lx * 0.45;
+      vGroup.add(leg);
+    });
+
+    // =========================================================
+    // 4. MECHANIC A: QUẢN LÝ BỘ NHỚ 18 KB
+    // =========================================================
+    const ramGridEl = document.getElementById('ram-grid');
+    const ramStatusEl = document.getElementById('ram-status');
+    const totalCells = 18;
+    let ramCells = new Array(totalCells).fill(null);
+
+    // Cố định 2 ô nhớ ăng-ten định vị (ô 16 và 17) theo yêu cầu
+    ramCells[16] = 'Antenna';
+    ramCells[17] = 'Antenna';
+
+    function initRAMGrid() {
+      ramGridEl.innerHTML = '';
+      ramCells.forEach((task, idx) => {
+        const cell = document.createElement('div');
+        const isAntenna = idx >= 16;
+        cell.className = `ram-cell ${task ? (isAntenna ? 'antenna-locked' : 'allocated') : ''}`;
+        cell.innerHTML = `<span>#${idx}</span><strong>${task || 'Trống'}</strong>`;
+        ramGridEl.appendChild(cell);
+      });
+      const used = ramCells.filter(t => t !== null).length;
+      ramStatusEl.textContent = `Đã dùng: ${used} / ${totalCells} KB`;
+    }
+
+    function allocateTask(taskName, size) {
+      let emptyIndices = [];
+      ramCells.forEach((val, i) => { if (!val && i < 16) emptyIndices.push(i); }); // Tránh ghi đè ô ăng-ten
+      if (emptyIndices.length < size) {
+        alert('⚠️ Tràn bộ nhớ (Buffer Overflow)! Không đủ ô trống.');
+        return;
+      }
+      for (let i = 0; i < size; i++) {
+        ramCells[emptyIndices[i]] = taskName;
+      }
+      initRAMGrid();
+      folkAudio.playTranhNote(size, 0.3);
+      triggerHaptic(50, 'Haptic: Ghi RAM (50ms)');
+    }
+
+    function resetRAM() {
+      ramCells.fill(null);
+      ramCells[16] = 'Antenna';
+      ramCells[17] = 'Antenna';
+      initRAMGrid();
+      folkAudio.playTranhNote(0, 0.2);
+    }
+
+    initRAMGrid();
+
+    // =========================================================
+    // 5. MECHANIC B: TESTBED & LỖI GHI ĐÈ ĂNG-TEN
+    // =========================================================
+    const consoleScreen = document.getElementById('console-screen');
+
+    function logConsole(msg) {
+      consoleScreen.innerHTML += `<br>> ${msg}`;
+      consoleScreen.scrollTop = consoleScreen.scrollHeight;
+    }
+
+    function runTestbed(isReal) {
+      logConsole(isReal ? '🚀 Đang gửi lệnh thẳng lên Sao Hỏa...' : '🧪 Đang chạy kiểm thử trên Testbed (Mặt Đất)...');
+      setTimeout(() => {
+        // Kiểm tra xem vùng nhớ ăng-ten (ô 16-17) có bị ghi đè không
+        const isAntennaOverwritten = ramCells.slice(16, 18).some(t => t !== 'Antenna');
+        if (isAntennaOverwritten) {
+          logConsole('❌ LỖI GHI ĐÈ (OVERWRITE BUG): Bản cập nhật phần mềm đã ghi đè vào vùng nhớ Ăng-ten định vị!');
+          logConsole('📡 MẤT TÍN HIỆU! Ăng-ten trên Sao Hỏa đã quay lệch hướng Trái Đất.');
+          antenna.rotation.z = 1.25; // Xoay lệch ăng-ten 3D
+          triggerHaptic(200, 'Haptic: Mất tín hiệu Ăng-ten!');
+          folkAudio.playTranhNote(1, 0.6);
+        } else {
+          logConsole('✅ THÀNH CÔNG: Vùng nhớ ăng-ten an toàn. Kết nối Trái Đất ổn định!');
+          antenna.rotation.z = 0;
+          triggerHaptic(50, 'Haptic: Lệnh thành công (50ms)');
+          folkAudio.playNostalgicChord();
+          if (isReal) {
+            setTimeout(() => {
+              document.getElementById('end-modal').classList.remove('hidden');
+            }, 1200);
+          }
+        }
+      }, 800);
+    }
+
+    function sendRealCommand() {
+      runTestbed(true);
+    }
+
+    // Modal & Audio Toggles
+    document.getElementById('btn-start').addEventListener('click', () => {
+      document.getElementById('start-modal').classList.add('hidden');
+      folkAudio.init();
+      folkAudio.playNostalgicChord();
+    });
+
+    document.getElementById('btn-close-end').addEventListener('click', () => {
+      document.getElementById('end-modal').classList.add('hidden');
+    });
+
+    document.getElementById('audio-pill').addEventListener('click', () => {
+      folkAudio.isEnabled = !folkAudio.isEnabled;
+      const pill = document.getElementById('audio-pill');
+      const lbl = document.getElementById('audio-label');
+      if (folkAudio.isEnabled) {
+        pill.classList.add('active');
+        lbl.textContent = 'Đàn Tranh & Đàn Bầu: Bật';
+        folkAudio.playNostalgicChord();
+      } else {
+        pill.classList.remove('active');
+        lbl.textContent = 'Âm thanh: Tắt';
+      }
+    });
+
+    // Routing SPA 5 chương
+    document.querySelectorAll('.route-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const ch = btn.dataset.ch;
+        if (ch !== '4') {
+          e.preventDefault();
+          alert(`Hệ thống xác nhận tuyến đường sang Chương ${ch} (#ch${ch}). Hiện tại bạn đang ở Chương 4: Viking 1.`);
+        }
+      });
+    });
+
+    // Animation Loop 3D
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const elapsed = clock.getElapsedTime();
+      vGroup.rotation.y = Math.sin(elapsed * 0.4) * 0.08;
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>

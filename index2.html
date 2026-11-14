@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App Shell - Web Nghe Nhạc</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, sans-serif; }
+    body { background-color: #0f172a; color: #f8fafc; display: flex; flex-direction: column; min-height: 100vh; }
+    
+    /* 1. NAVBAR */
+    nav { background-color: #1e293b; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; position: sticky; top: 0; z-index: 10; }
+    nav .logo { font-weight: bold; font-size: 1.2rem; color: #38bdf8; }
+    nav .menu button { background: none; border: none; color: #cbd5e1; margin-left: 20px; cursor: pointer; font-size: 1rem; }
+    nav .menu button:hover, nav .menu button.active { color: #38bdf8; font-weight: bold; }
+
+    /* 2. MAIN CONTENT (Vùng thay đổi nội dung) */
+    main { flex: 1; padding: 30px; max-width: 1000px; margin: 0 auto; width: 100%; }
+    .page { display: none; animation: fadeIn 0.3s; }
+    .page.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* 3. FOOTER */
+    footer { background-color: #1e293b; text-align: center; padding: 20px; color: #94a3b8; font-size: 0.9rem; margin-bottom: 80px; /* Chừa chỗ cho Audio Player */ }
+
+    /* 4. AUDIO PLAYER SHELL (Cố định dưới đáy) */
+    .audio-shell { position: fixed; bottom: 0; left: 0; right: 0; height: 80px; background-color: #020617; border-top: 1px solid #334155; display: flex; align-items: center; justify-content: space-between; padding: 0 30px; z-index: 50; }
+    .song-info { display: flex; flex-direction: column; }
+    .song-title { font-weight: bold; color: #fff; }
+    .song-artist { font-size: 0.85rem; color: #94a3b8; }
+    audio { width: 50%; max-width: 500px; height: 40px; }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav>
+    <div class="logo">🎵 SOUND SHELL</div>
+    <div class="menu">
+      <button class="active" onclick="switchTab('home', this)">Trang chủ</button>
+      <button onclick="switchTab('explore', this)">Khám phá</button>
+      <button onclick="switchTab('library', this)">Thư viện</button>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main>
+    <div id="home" class="page active">
+      <h1>Trang Chủ</h1>
+      <p style="margin-top: 10px; color: #94a3b8;">Bấm phát tiếng sáo dân tộc ở thanh bên dưới, sau đó thử chuyển sang tab "Khám phá" hoặc "Thư viện" để thấy âm thanh vẫn chạy liên tục.</p>
+    </div>
+
+    <div id="explore" class="page">
+      <h1>Khám Phá</h1>
+      <p style="margin-top: 10px; color: #94a3b8;">Danh sách các giai điệu nhạc cụ dân tộc truyền thống.</p>
+    </div>
+
+    <div id="library" class="page">
+      <h1>Thư Viện Cá Nhân</h1>
+      <p style="margin-top: 10px; color: #94a3b8;">Nơi lưu trữ các bản sáo và nhạc cụ yêu thích của bạn.</p>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    © 2026 Sound Shell Project. All rights reserved.
+  </footer>
+
+  <!-- AUDIO PLAYER SHELL (Đã đổi sang nguồn tiếng sáo trúc/dân tộc bay bổng) -->
+  <div class="audio-shell">
+    <div class="song-info">
+      <span class="song-title">Tiếng Sáo Quê Hương (Bamboo Flute)</span>
+      <span class="song-artist">Nhạc cụ Dân tộc Việt Nam</span>
+    </div>
+    <!-- Sử dụng nguồn audio tiếng sáo/nhạc cụ mộc mạc, bay bổng -->
+    <audio controls>
+      <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf756.mp3?filename=chilling-japanese-flute-and-koto-asian-meditation-110903.mp3" type="audio/mpeg">
+      Trình duyệt của bạn không hỗ trợ phát âm thanh.
+    </audio>
+  </div>
+
+  <!-- JS XỬ LÝ CHUYỂN TRANG KHÔNG RELOAD -->
+  <script>
+    function switchTab(tabId, btnElement) {
+      // Ẩn tất cả các trang
+      document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+      // Bỏ trạng thái active ở nút menu
+      document.querySelectorAll('nav .menu button').forEach(btn => btn.classList.remove('active'));
+      
+      // Hiển thị trang được chọn
+      document.getElementById(tabId).classList.add('active');
+      btnElement.classList.add('active');
+    }
+  </script>
+</body>
+</html>

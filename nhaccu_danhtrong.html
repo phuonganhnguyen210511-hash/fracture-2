@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trạm Tích Hợp Web Audio API - Nhạc Cụ Dân Tộc Việt Nam</title>
+  <style>
+    :root {
+      --bg-dark: #0c0806;
+      --panel-bg: rgba(22, 14, 10, 0.9);
+      --accent-gold: #f59e0b;
+      --accent-rust: #ea580c;
+      --text-main: #f8fafc;
+      --text-muted: #cbd5e1;
+      --border-glass: rgba(245, 158, 11, 0.3);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      color: var(--accent-gold);
+      margin-bottom: 6px;
+    }
+
+    header p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+
+    .container {
+      width: min(920px, 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Bảng chọn nhạc cụ */
+    .instrument-selector {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-glass);
+      padding: 12px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+
+    .inst-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .inst-btn:hover {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fff;
+    }
+
+    .inst-btn.active {
+      background: linear-gradient(135deg, var(--accent-rust), var(--accent-gold));
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+    }
+
+    /* Bảng điều khiển chơi nhạc */
+    .play-board {
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-glass);
+      border-radius: 20px;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+    }
+
+    .current-inst-title {
+      font-size: 1.1rem;
+      color: #fde047;
+      margin-bottom: 8px;
+      font-weight: 800;
+    }
+
+    .current-inst-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    /* Bàn phím nốt nhạc / nút bấm */
+    .keys-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .note-key {
+      background: linear-gradient(160deg, #26160e, #140b07);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      border-radius: 12px;
+      padding: 18px 10px;
+      cursor: pointer;
+      transition: transform 0.1s, background 0.1s;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+    }
+
+    .note-key:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-gold);
+    }
+
+    .note-key:active {
+      transform: scale(0.96);
+      background: var(--accent-rust);
+    }
+
+    .note-key .name {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #fef08a;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .note-key .hz {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      display: block;
+    }
+
+    /* Khu vực đặc biệt cho Đàn Bầu & Trống Cơm */
+    .special-controls {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .control-btn {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+    }
+
+    .control-btn:hover { filter: brightness(1.1); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Trạm Web Audio API - Nhạc Cụ Dân Tộc Việt Nam</h1>
+    <p>Tổng hợp bộ tổng hợp âm thanh (Synthesizer) thời gian thực cho Đàn Tranh, Đàn Bầu, Đàn T'rưng, Đàn Hồ và Trống Cơm.</p>
+  </header>
+
+  <div class="container">
+    <!-- Chọn nhạc cụ -->
+    <nav class="instrument-selector" aria-label="Chọn nhạc cụ">
+      <button class="inst-btn active" onclick="switchInstrument('tranh')">🪕 Đàn Tranh</button>
+      <button class="inst-btn" onclick="switchInstrument('bau')">🎸 Đàn Bầu</button>
+      <button class="inst-btn" onclick="switchInstrument('trung')">🎋 Đàn T'rưng</button>
+      <button class="inst-btn" onclick="switchInstrument('ho')">🎻 Đàn Hồ</button>
+      <button class="inst-btn" onclick="switchInstrument('trong')">🥁 Trống Cơm</button>
+    </nav>
+
+    <!-- Bảng tương tác -->
+    <section class="play-board">
+      <div class="current-inst-title" id="inst-title">Đàn Tranh (Ngũ Cung Việt Nam)</div>
+      <div class="current-inst-desc" id="inst-desc">Âm thanh gảy dây tơ mộc mạc, kèm kỹ thuật nhấn dây luyến láy.</div>
+
+      <div class="keys-grid" id="keys-container">
+        <!-- Các phím nốt sẽ được sinh tự động bằng JS -->
+      </div>
+
+      <div class="special-controls" id="special-controls">
+        <!-- Điều khiển đặc biệt cho Đàn Bầu / Trống Cơm -->
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // ==========================================
+    // WEB AUDIO API - NHẠC CỤ DÂN TỘC VIỆT NAM
+    // ==========================================
+    class VietnameseInstrumentsSynth {
+      constructor() {
+        this.ctx = null;
+        this.currentInst = 'tranh';
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioCtx();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      // 1. ĐÀN TRANH (Gảy dây tơ / kim loại kèm nhấn dây pitch-bend)
+      playTranh(freq, duration = 0.8) {
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        // Nhấn dây (pitch bend) nhẹ lúc đầu
+        osc.frequency.setValueAtTime(freq * 0.95, now);
+        osc.frequency.exponentialRampToValueAtTime(freq, now + 0.08);
+        osc.frequency.setValueAtTime(freq, now + duration * 0.7);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.97, now + duration);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.4, now + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + duration);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + duration + 0.02);
+      }
+
+      // 2. ĐÀN BẦU (Cần câu đàn ngân dài với vibrato sâu)
+      playBau(freq, duration = 1.2) {
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const lfo = this.ctx.createOscillator();
+        const lfoGain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        // Glissando vuốt cần đàn từ thấp lên nốt chính
+        osc.frequency.setValueAtTime(freq * 0.75, now);
+        osc.frequency.exponentialRampToValueAtTime(freq, now + 0.25);
+
+        // Rung ngân vibrato đặc trưng đàn bầu
+        lfo.frequency.value = 5.5;
+        lfoGain.gain.value = 14;
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.45, now + 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + duration);
+
+        lfo.start(now);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        lfo.stop(now + duration);
+        osc.start(now);
+        osc.stop(now + duration + 0.02);
+      }
+
+      // 3. ĐÀN T'RƯNG (Ống nứa gõ lanh canh, trong trẻo)
+      playTrung(freq, duration = 0.35) {
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc1 = this.ctx.createOscillator();
+        const osc2 = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc1.type = 'sine';
+        osc2.type = 'sine';
+        osc1.frequency.setValueAtTime(freq, now);
+        osc2.frequency.setValueAtTime(freq * 2.76, now); // Hài âm ống tre
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.35, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + duration);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + duration + 0.02);
+        osc2.stop(now + duration * 0.5);
+      }
+
+      // 4. ĐÀN HỒ (Âm trầm ấm áp, kéo vĩ sừng ngựa)
+      playHo(freq, duration = 0.9) {
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const filter = this.ctx.createBiquadFilter();
+
+        osc.type = 'sawtooth'; // Sóng răng cưa tạo tiếng vĩ kéo
+        osc.frequency.setValueAtTime(freq, now);
+
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(800, now);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.28, now + 0.12);
+        gain.gain.setValueAtTime(0.22, now + duration * 0.7);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + duration);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + duration + 0.02);
+      }
+
+      // 5. TRỐNG CƠM (Mặt da căng dán cơm nguội, trầm ấm nảy giòn)
+      playTrongCom(intensity = 1.0) {
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(180 * intensity, now);
+        osc.frequency.exponentialRampToValueAtTime(65, now + 0.18);
+        osc.frequency.exponentialRampToValueAtTime(45, now + 0.35);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.6 * intensity, now + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.4);
+      }
+    }
+
+    const synth = new VietnameseInstrumentsSynth();
+
+    // Dữ liệu nốt nhạc theo ngũ cung dân tộc
+    const instrumentData = {
+      tranh: {
+        title: "Đàn Tranh (Ngũ Cung Việt Nam)",
+        desc: "Âm thanh gảy dây tơ mộc mạc, luyến láy hoài cổ.",
+        notes: [
+          { name: "Hò (C4)", freq: 261.63 },
+          { name: "Xừ (Eb4)", freq: 311.13 },
+          { name: "Xang (F4)", freq: 349.23 },
+          { name: "Xê (G4)", freq: 392.00 },
+          { name: "Cống (Bb4)", freq: 466.16 },
+          { name: "Líu (C5)", freq: 523.25 }
+        ]
+      },
+      bau: {
+        title: "Đàn Bầu (Độc Cuyền Cần Cầu)",
+        desc: "Âm thanh ngân dài đơn huyền với độ rung sâu lắng.",
+        notes: [
+          { name: "Trầm (C3)", freq: 130.81 },
+          { name: "Trung (G3)", freq: 196.00 },
+          { name: "Chính (C4)", freq: 261.63 },
+          { name: "Cao (G4)", freq: 392.00 },
+          { name: "Vút (C5)", freq: 523.25 }
+        ]
+      },
+      trung: {
+        title: "Đàn T'rưng (Ống Nứa Tây Nguyên)",
+        desc: "Tiếng ống tre gõ lanh canh, trong trẻo, âm hưởng đại ngàn.",
+        notes: [
+          { name: "Đồ (C5)", freq: 523.25 },
+          { name: "Rê (D5)", freq: 587.33 },
+          { name: "Mi (E5)", freq: 659.25 },
+          { name: "Sol (G5)", freq: 783.99 },
+          { name: "La (A5)", freq: 880.00 },
+          { name: "Đố (C6)", freq: 1046.50 }
+        ]
+      },
+      ho: {
+        title: "Đàn Hồ (Âm Trầm Cung Vĩ)",
+        desc: "Tiếng kéo vĩ trầm ấm, dày dặn cảm xúc.",
+        notes: [
+          { name: "Trầm G2", freq: 98.00 },
+          { name: "D2", freq: 146.83 },
+          { name: "G3", freq: 196.00 },
+          { name: "D3", freq: 293.66 }
+        ]
+      },
+      trong: {
+        title: "Trống Cơm (Nhịp Điệu Dân Gian)",
+        desc: "Vỗ mặt trống trầm ấm, nảy giòn.",
+        notes: [
+          { name: "Tang (Trầm)", freq: 120 },
+          { name: "Tình (Trung)", freq: 180 },
+          { name: "Tăng (Cao)", freq: 240 }
+        ]
+      }
+    };
+
+    function switchInstrument(type) {
+      synth.currentInst = type;
+      document.querySelectorAll('.inst-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      const data = instrumentData[type];
+      document.getElementById('inst-title').textContent = data.title;
+      document.getElementById('inst-desc').textContent = data.desc;
+
+      const keysContainer = document.getElementById('keys-container');
+      keysContainer.innerHTML = '';
+      const specialControls = document.getElementById('special-controls');
+      specialControls.innerHTML = '';
+
+      if (type === 'trong') {
+        // Giao diện Trống Cơm
+        data.notes.forEach((note, idx) => {
+          const btn = document.createElement('button');
+          btn.className = 'note-key';
+          btn.innerHTML = `<span class="name">${note.name}</span><span class="hz">Vỗ trống</span>`;
+          btn.onclick = () => synth.playTrongCom(1.0 + idx * 0.15);
+          keysContainer.appendChild(btn);
+        });
+
+        const autoBtn = document.createElement('button');
+        autoBtn.className = 'control-btn';
+        autoBtn.textContent = '🥁 Đánh Nhịp Trống Cơm (Auto)';
+        autoBtn.onclick = () => {
+          let count = 0;
+          const interval = setInterval(() => {
+            synth.playTrongCom(count % 2 === 0 ? 1.0 : 0.75);
+            count++;
+            if (count > 7) clearInterval(interval);
+          }, 250);
+        };
+        specialControls.appendChild(autoBtn);
+
+      } else {
+        // Giao diện đàn dây / ống tre
+        data.notes.forEach(note => {
+          const btn = document.createElement('button');
+          btn.className = 'note-key';
+          btn.innerHTML = `<span class="name">${note.name}</span><span class="hz">${Math.round(note.hz || note.freq)} Hz</span>`;
+          
+          btn.onclick = () => {
+            if (type === 'tranh') synth.playTranh(note.freq);
+            else if (type === 'bau') synth.playBau(note.freq);
+            else if (type === 'trung') synth.playTrung(note.freq);
+            else if (type === 'ho') synth.playHo(note.freq);
+          };
+          keysContainer.appendChild(btn);
+        });
+
+        // Nút biểu diễn tự động ngắn
+        const demoBtn = document.createElement('button');
+        demoBtn.className = 'control-btn';
+        demoBtn.textContent = '🎵 Chơi Đoạn Nhạc Ngẫu Nhiên';
+        demoBtn.onclick = () => {
+          data.notes.forEach((n, idx) => {
+            setTimeout(() => {
+              if (type === 'tranh') synth.playTranh(n.freq);
+              else if (type === 'bau') synth.playBau(n.freq);
+              else if (type === 'trung') synth.playTrung(n.freq);
+              else if (type === 'ho') synth.playHo(n.freq);
+            }, idx * 220);
+          });
+        };
+        specialControls.appendChild(demoBtn);
+      }
+    }
+
+    // Khởi tạo mặc định Đàn Tranh
+    switchInstrument('tranh');
+  </script>
+</body>
+</html>

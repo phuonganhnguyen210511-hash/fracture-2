@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oppy Mission: Trắc Nghiệm & Quản Lý Năng Lượng Sao Hỏa</title>
+    <style>
+        :root {
+            --mars-red: #d14931;
+            --mars-dark: #1e1214;
+            --panel-bg: #2c1a1d;
+            --accent-yellow: #f39c12;
+            --text-light: #f5f6fa;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--mars-dark);
+            color: var(--text-light);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 750px;
+            width: 100%;
+            background: var(--panel-bg);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+            border: 2px solid var(--mars-red);
+        }
+        h1 {
+            text-align: center;
+            color: var(--accent-yellow);
+            font-size: 1.5rem;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        .status-bar {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+        .stat-card {
+            background: #4a2e33;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #6b3d45;
+        }
+        .stat-card h4 {
+            margin: 0 0 5px 0;
+            font-size: 0.8rem;
+            color: #b2bec3;
+        }
+        .stat-card span {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--accent-yellow);
+        }
+        .quiz-box {
+            background: #3a2529;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #553338;
+            margin-bottom: 20px;
+        }
+        .question-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .option-btn {
+            background: #442a2f;
+            color: white;
+            border: 1px solid #6b3d45;
+            padding: 12px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+        .option-btn:hover:not(:disabled) {
+            background: var(--mars-red);
+            border-color: #e74c3c;
+        }
+        .option-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .signal-delay-overlay {
+            background: #221114;
+            border: 1px dashed var(--accent-yellow);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-style: italic;
+            color: #00cec9;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .result-screen {
+            text-align: center;
+            display: none;
+        }
+        .result-screen h2 {
+            color: var(--accent-yellow);
+        }
+        button.restart-btn {
+            background: var(--mars-red);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 15px;
+        }
+        button.restart-btn:hover {
+            background: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="game-container">
+    <h1>🔴 OPFY: Trắc Nghiệm Năng Lượng & Độ Trễ Sao Hỏa</h1>
+    
+    <!-- Thanh trạng thái mô phỏng năng lượng, điểm số và sol -->
+    <div class="status-bar" id="status-bar">
+        <div class="stat-card">
+            <h4>NĂNG LƯỢNG PIN</h4>
+            <span id="battery-val">100%</span>
+        </div>
+        <div class="stat-card">
+            <h4>ĐIỂM KHOA HỌC</h4>
+            <span id="score-val">0 pts</span>
+        </div>
+        <div class="stat-card">
+            <h4>CÂU HỎI</h4>
+            <span id="progress-val">1 / 4</span>
+        </div>
+    </div>
+
+    <!-- Hộp thông báo độ trễ sóng vô tuyến -->
+    <div class="signal-delay-overlay" id="delay-box">
+        📡 Đang truyền tín hiệu xuyên không gian (Độ trễ sóng 5–20 phút thực tế / 3 giây mô phỏng)... Vui lòng đợi kết quả từ bề mặt Sao Hỏa.
+    </div>
+
+    <!-- Khu vực câu hỏi trắc nghiệm -->
+    <div class="quiz-box" id="quiz-box">
+        <div class="question-text" id="question-text">Đang tải câu hỏi...</div>
+        <div class="options-list" id="options-list">
+            <!-- Các nút đáp án sẽ được chèn bằng JavaScript -->
+        </div>
+    </div>
+
+    <!-- Màn hình tổng kết kết quả điểm -->
+    <div class="result-screen" id="result-screen">
+        <h2>🎉 Hoàn Thành Sứ Mệnh Sao Hỏa!</h2>
+        <p id="final-message" style="font-size: 1.1rem; line-height: 1.6;"></p>
+        <button class="restart-btn" onclick="restartGame()">Chơi Lại Sứ Mệnh</button>
+    </div>
+</div>
+
+<script>
+    // Dữ liệu câu hỏi bám sát thực tế các kịch bản vận hành xe tự hành (Oppy / Pathfinder)
+    const quizData = [
+        {
+            question: "Câu hỏi 1 (Vận hành năng lượng): Khi màn đêm Sao Hỏa buông xuống, nhiệt độ bề mặt sụt giảm cực hạn xuống tới -78°C[cite: 1]. Kỹ sư cần thực hiện hành động gì để bảo vệ vi mạch xe tự hành?",
+            options: [
+                { text: "Bật lò sưởi điện giữ nhiệt vi mạch (Tiêu hao 25% Pin).", correct: true, energyCost: 25, scoreGain: 25, feedback: "Chính xác! Sưởi ấm giúp ngăn chặn hiện tượng mỏi vật liệu (Thermal Fatigue) do sốc nhiệt[cite: 1]." },
+                { text: "Tắt toàn bộ thiết bị và mặc kệ nhiệt độ (Tiết kiệm điện tuyệt đối).", correct: false, energyCost: 0, scoreGain: 0, feedback: "Sai lầm! Chênh lệch nhiệt độ lớn gây giãn nở nhiệt làm hỏng hóc nghiêm trọng các vi mạch điện tử." },
+                { text: "Khởi động động cơ di chuyển liên tục để tạo nhiệt (Tiêu hao 50% Pin).", correct: false, energyCost: 50, scoreGain: 5, feedback: "Sai! Di chuyển ban đêm cực kỳ nguy hiểm do cạn kiệt năng lượng và dễ sụt lún hố cát." }
+            ]
+        },
+        {
+            question: "Câu hỏi 2 (Cơ chế độ trễ sóng vô tuyến): Bạn vừa gửi lệnh khoan mẫu đá mỏm Perseverance. Khoảng cách Trái Đất - Sao Hỏa tạo ra độ trễ tín hiệu khoảng 15 phút. Bạn cần làm gì tiếp theo?",
+            options: [
+                { text: "Bấm liên tục vào nút lệnh để ép xe thực thi ngay lập tức.", correct: false, energyCost: 0, scoreGain: 0, feedback: "Không khả thi! Sóng vô tuyến không thể truyền nhanh hơn tốc độ ánh sáng qua khoảng cách hàng trăm triệu km." },
+                { text: "Chờ đợi hệ thống xử lý độ trễ và theo dõi thuật toán tự hành 'Đi – Dừng – Nhìn' của xe[cite: 1].", correct: true, energyCost: 10, scoreGain: 25, feedback: "Chính xác! Xe tự hành phải sử dụng thuật toán quét laser thông minh để tự quyết định né vật cản trong lúc chờ lệnh[cite: 1]." },
+                { text: "Hủy ngay lệnh vì nghĩ rằng hệ thống mạng bị lỗi kết nối.", correct: false, energyCost: 0, scoreGain: 0, feedback: "Sai! Độ trễ thời gian là đặc thù vật lý tất yếu trong không gian sâu." }
+            ]
+        },
+        {
+            question: "Câu hỏi 3 (Hiệu suất tấm pin mặt trời): Bụi bám trên bề mặt tấm pin năng lượng mặt trời làm giảm hiệu suất sạc của xe. Giải pháp tối ưu nhất là gì?",
+            options: [
+                { text: "Dùng cần gạt nước gắn sẵn trên xe để quét bụi.", correct: false, energyCost: 0, scoreGain: 0, feedback: "Sai! Xe tự hành thế hệ cũ không có thiết bị cần gạt nước phức tạp như vậy." },
+                { text: "Chờ đợi các cơn gió lốc nhỏ (Dust Devil) ngẫu nhiên quét sạch bụi giúp tấm pin[cite: 1].", correct: true, energyCost: -20, scoreGain: 25, feedback: "Chính xác! Những cơn gió lốc trên Sao Hỏa thường vô tình làm sạch tấm pin, giúp khôi phục năng lượng bất ngờ." },
+                { text: "Ra lệnh cho xe tự đứng dậy và phủi sạch bụi bằng tay máy.", correct: false, energyCost: 30, scoreGain: 0, feedback: "Sai! Tay máy của xe có thiết kế chuyên dụng cho khoa học địa chất, không dùng để phủi bụi." }
+            ]
+        },
+        {
+            question: "Câu hỏi 4 (Xử lý sự cố phần mềm): Trạm mặt đất phát hiện lỗi hệ thống do xung đột bộ nhớ tương tự sự cố đảo ngược ưu tiên (Priority Inversion)[cite: 1]. Kỹ sư xử lý thế nào?",
+            options: [
+                { text: "Bay lên Sao Hỏa trực tiếp để cắm cáp sửa lỗi tận nơi.", correct: false, energyCost: 0, scoreGain: 0, feedback: "Hoàn toàn bất khả thi đối với khoảng cách hàng trăm triệu km!" },
+                { text: "Tải gói tin bản vá phần mềm từ xa qua sóng vô tuyến để sắp xếp lại hàng đợi tiến trình[cite: 1].", correct: true, energyCost: 15, scoreGain: 25, feedback: "Chính xác tuyệt đối! Kỹ sư NASA đã sửa lỗi phần mềm từ xa thành công, minh chứng thông điệp 'Not Forgotten'[cite: 1]." },
+                { text: "Bỏ mặc xe tự hành và tuyên bố kết thúc sứ mệnh.", correct: false, energyCost: 0, scoreGain: 0, feedback: "Sai! Tinh thần kiên trì của kỹ sư không bao giờ bỏ cuộc trước các lỗi phần mềm." }
+            ]
+        }
+    ];
+
+    let currentQuestion = 0;
+    let battery = 100;
+    let score = 0;
+    let isWaitingDelay = false;
+
+    const batteryValEl = document.getElementById('battery-val');
+    const scoreValEl = document.getElementById('score-val');
+    const progressValEl = document.getElementById('progress-val');
+    const questionTextEl = document.getElementById('question-text');
+    const optionsListEl = document.getElementById('options-list');
+    const delayBoxEl = document.getElementById('delay-box');
+    const quizBoxEl = document.getElementById('quiz-box');
+    const resultScreenEl = document.getElementById('result-screen');
+    const finalMessageEl = document.getElementById('final-message');
+
+    function loadQuestion() {
+        if (currentQuestion >= quizData.length || battery <= 0) {
+            endGame();
+            return;
+        }
+
+        const q = quizData[currentQuestion];
+        progressValEl.innerText = `${currentQuestion + 1} / ${quizData.length}`;
+        questionTextEl.innerText = q.question;
+        optionsListEl.innerHTML = '';
+
+        q.options.forEach((opt, index) => {
+            const btn = document.createElement('button');
+            btn.classList.add('option-btn');
+            btn.innerText = `${String.fromCharCode(65 + index)}. ${opt.text}`;
+            btn.onclick = () => handleAnswer(opt);
+            optionsListEl.appendChild(btn);
+        });
+    }
+
+    function handleAnswer(selectedOption) {
+        if (isWaitingDelay) return;
+        isWaitingDelay = true;
+
+        // Vô hiệu hóa các nút tạm thời để mô phỏng độ trễ sóng vô tuyến
+        const buttons = optionsListEl.getElementsByTagName('button');
+        for (let b of buttons) b.disabled = true;
+
+        // Hiển thị khung chờ độ trễ sóng vô tuyến
+        delayBoxEl.style.display = 'block';
+
+        // Mô phỏng độ trễ truyền tín hiệu mất 3 giây
+        setTimeout(() => {
+            delayBoxEl.style.display = 'none';
+
+            // Cập nhật năng lượng và điểm số
+            battery -= selectedOption.energyCost;
+            if (battery < 0) battery = 0;
+            score += selectedOption.scoreGain;
+
+            // Cập nhật giao diện thanh trạng thái
+            batteryValEl.innerText = battery + '%';
+            scoreValEl.innerText = score + ' pts';
+
+            alert(selectedOption.feedback);
+
+            currentQuestion++;
+            isWaitingDelay = false;
+
+            if (battery <= 0) {
+                endGame();
+            } else {
+                loadQuestion();
+            }
+        }, 3000);
+    }
+
+    function endGame() {
+        quizBoxEl.style.display = 'none';
+        delayBoxEl.style.display = 'none';
+        document.getElementById('status-bar').style.display = 'none';
+        resultScreenEl.style.display = 'block';
+
+        let rankTitle = "";
+        if (score >= 100) {
+            rankTitle = "🏆 Kỹ Sư Trưởng Xuất Sắc (Hạng S): Bạn đã vận hành Oppy vượt qua mọi giới hạn khắc nghiệt của Sao Hỏa!";
+        } else if (score >= 50) {
+            rankTitle = "🥈 Kỹ Sư Vận Hành Tiềm Năng (Hạng A): Sứ mệnh hoàn thành tốt, quản lý năng lượng và xử lý tình huống khá ổn.";
+        } else {
+            rankTitle = "⚠️ Cần Cải Thiện (Hạng B): Pin cạn kiệt hoặc xử lý sai lệch thông số kỹ thuật. Cần tính toán kỹ lưỡng hơn cho lần sau!";
+        }
+
+        finalMessageEl.innerHTML = `Tổng điểm khoa học đạt được: <strong>${score} / 100 điểm</strong><br>Năng lượng pin còn lại: <strong>${battery}%</strong><br><br><em>${rankTitle}</em>`;
+    }
+
+    function restartGame() {
+        currentQuestion = 0;
+        battery = 100;
+        score = 0;
+        isWaitingDelay = false;
+        batteryValEl.innerText = '100%';
+        scoreValEl.innerText = '0 pts';
+        quizBoxEl.style.display = 'block';
+        document.getElementById('status-bar').style.display = 'grid';
+        resultScreenEl.style.display = 'none';
+        loadQuestion();
+    }
+
+    // Khởi động câu hỏi đầu tiên khi mở trang
+    loadQuestion();
+</script>
+
+</body>
+</html>

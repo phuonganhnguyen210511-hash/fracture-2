@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trình Nghe Âm Thanh Nhạc Cụ Dân Tộc - Web Audio API</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f0a07;
+      color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
+    }
+    .card {
+      background: rgba(24, 15, 10, 0.9);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+      max-width: 450px;
+      width: 90%;
+    }
+    h1 { color: #fde047; font-size: 1.3rem; margin-bottom: 10px; }
+    p { color: #cbd5e1; font-size: 0.88rem; margin-bottom: 20px; }
+    .btn-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    button {
+      background: linear-gradient(135deg, #ea580c, #f59e0b);
+      color: #fff;
+      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: transform 0.1s, filter 0.15s;
+      box-shadow: 0 4px 12px rgba(234, 88, 12, 0.4);
+    }
+    button:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    button:active { transform: scale(0.97); }
+    .full { grid-column: span 2; background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h1>🎵 Trình Phát Âm Thanh Web Audio API</h1>
+    <p>Nhấn vào các nút bên dưới để nghe trực tiếp âm thanh tổng hợp của từng nhạc cụ dân tộc Việt Nam!</p>
+    
+    <div class="btn-grid">
+      <button onclick="playFlute()">🎋 Sáo Trúc (Ch.2)</button>
+      <button onclick="playDanTrung()">🎶 Đàn T'rưng (Ch.3)</button>
+      <button onclick="playTrongCom()">🥁 Trống Cơm (Ch.3)</button>
+      <button onclick="playDanTranh()">🪕 Đàn Tranh (Ch.4)</button>
+      <button class="full" onclick="playFullOrchestra()">🌟 Hòa Âm Toàn Bộ Giao Hưởng</button>
+    </div>
+  </div>
+
+  <script>
+    let audioCtx = null;
+    function getContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    // 1. Sáo Trúc (Chương 2)
+    function playFlute() {
+      const ctx = getContext();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1046.50, now); // C6
+      osc.frequency.exponentialRampToValueAtTime(1567.98, now + 0.5); // G6
+      
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.3, now + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.85);
+    }
+
+    // 2. Đàn T'rưng (Chương 3 & 5)
+    function playDanTrung() {
+      const ctx = getContext();
+      const now = ctx.currentTime;
+      [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        
+        gain.gain.setValueAtTime(0.001, now + idx * 0.12);
+        gain.gain.linearRampToValueAtTime(0.25, now + idx * 0.12 + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.35);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + idx * 0.12);
+        osc.stop(now + idx * 0.12 + 0.38);
+      });
+    }
+
+    // 3. Trống Cơm (Chương 3)
+    function playTrongCom() {
+      const ctx = getContext();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(180, now);
+      osc.frequency.exponentialRampToValueAtTime(65, now + 0.2);
+      
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.6, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.38);
+    }
+
+    // 4. Đàn Tranh (Chương 4)
+    function playDanTranh() {
+      const ctx = getContext();
+      const now = ctx.currentTime;
+      [261.63, 349.23, 392.00, 523.25].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq * 0.96, now + idx * 0.15);
+        osc.frequency.exponentialRampToValueAtTime(freq, now + idx * 0.15 + 0.08);
+
+        gain.gain.setValueAtTime(0.001, now + idx * 0.15);
+        gain.gain.linearRampToValueAtTime(0.35, now + idx * 0.15 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.15 + 0.6);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + idx * 0.15);
+        osc.stop(now + idx * 0.15 + 0.65);
+      });
+    }
+
+    // 5. Hòa âm toàn bộ
+    function playFullOrchestra() {
+      playFlute();
+      setTimeout(playDanTrung, 200);
+      setTimeout(playTrongCom, 500);
+      setTimeout(playDanTranh, 700);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viking 1: Phòng Thí Nghiệm Đỉnh Cao - Ống A + B Đổ Vào C</title>
+    <style>
+        :root {
+            --mars-red: #d14931;
+            --mars-dark: #12080a;
+            --panel-bg: #1c0e10;
+            --accent-yellow: #f39c12;
+            --text-light: #f5f6fa;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--mars-dark);
+            color: var(--text-light);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 960px;
+            width: 100%;
+            background: var(--panel-bg);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            border: 2px solid var(--mars-red);
+            text-align: center;
+        }
+        h1 {
+            color: var(--accent-yellow);
+            font-size: 1.35rem;
+            margin-top: 0;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            font-size: 0.82rem;
+            color: #b2bec3;
+            margin-bottom: 15px;
+        }
+
+        /* Bàn thí nghiệm: Ống A, Ống B và Ống Phản Ứng C ở giữa */
+        .lab-bench {
+            background: #281216;
+            border: 2px solid #552830;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 25px;
+            min-height: 200px;
+        }
+
+        .test-tube-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .test-tube {
+            width: 42px;
+            height: 130px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 3px solid rgba(255, 255, 255, 0.4);
+            border-top: none;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset -3px 0 6px rgba(255,255,255,0.1), 0 4px 10px rgba(0,0,0,0.5);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .test-tube:hover {
+            transform: scale(1.05);
+            border-color: var(--accent-yellow);
+        }
+        .test-tube::before {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 3px;
+            width: 4px;
+            height: 90px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+        }
+        .tube-lip {
+            width: 50px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 3px;
+            margin-bottom: -2px;
+        }
+        .tube-liquid {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            transition: height 0.5s ease, background 0.5s ease;
+        }
+        .tube-label {
+            margin-top: 6px;
+            font-size: 0.78rem;
+            font-weight: bold;
+            color: #dfe6e9;
+            max-width: 90px;
+            word-wrap: break-word;
+        }
+
+        /* Ống Phản Ứng C ở giữa */
+        .reaction-flask-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-left: 2px dashed #63353c;
+            border-right: 2px dashed #63353c;
+            padding: 0 20px;
+        }
+        .reaction-flask {
+            width: 65px;
+            height: 145px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 3px solid #f39c12;
+            border-top: 2px solid #f39c12;
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset -4px 0 10px rgba(243,156,18,0.2), 0 5px 20px rgba(243,156,18,0.3);
+        }
+        .flask-neck {
+            width: 30px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 3px solid #f39c12;
+            border-bottom: none;
+            margin-bottom: -2px;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
+        .flask-liquid {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            transition: height 0.8s ease, background 0.8s ease;
+        }
+
+        /* Hiệu ứng bọt khí lơ lửng */
+        .bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            bottom: 5px;
+            animation: rise 1.6s infinite ease-in;
+            display: none;
+        }
+        @keyframes rise {
+            0% { transform: translateY(0) scale(0.6); opacity: 0.2; }
+            50% { opacity: 0.95; }
+            100% { transform: translateY(-110px) scale(1.3); opacity: 0; }
+        }
+
+        /* 8 Hợp chất thực tế */
+        .compounds-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .compound-card {
+            background: #3c191e;
+            border: 1px solid #723f47;
+            padding: 8px 6px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+        .compound-card:hover {
+            background: var(--mars-red);
+            border-color: #e74c3c;
+            transform: translateY(-2px);
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        button.btn-primary {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 9px 18px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        button.btn-primary:hover { background: #219653; }
+        button.btn-secondary {
+            background: #c0392b;
+            color: white;
+            border: none;
+            padding: 9px 18px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        button.btn-secondary:hover { background: #a93226; }
+
+        .result-box {
+            background: #14090b;
+            border: 1px solid #552b30;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 0.88rem;
+            line-height: 1.5;
+            min-height: 70px;
+            color: #00cec9;
+            text-align: left;
+        }
+        .history-tag {
+            display: inline-block;
+            background: #3a1c22;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.74rem;
+            margin-top: 5px;
+            color: var(--accent-yellow);
+            border: 1px solid #63353c;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="game-container">
+    <h1>🔬 Phòng Thí Nghiệm Viking 1: Ống A + Ống B ➔ Ống Phản Ứng C</h1>
+    <div class="subtitle">Chọn hóa chất thực tế cho **Ống A** và **Ống B**, sau đó bấm *"Đổ A & B vào C"* để quan sát phản ứng trực tiếp trong ống C (với hơn 30+ tổ hợp, hiệu ứng sủi bọt khí lơ lửng và random sắc thái màu sắc đa dạng, tỷ lệ sai 1/3)[cite: 2]!</div>
+
+    <!-- Bàn thí nghiệm -->
+    <div class="lab-bench">
+        <!-- Ống A -->
+        <div class="test-tube-wrapper">
+            <div class="tube-lip"></div>
+            <div class="test-tube" onclick="selectForSlot('A')">
+                <div class="tube-liquid" id="liquid-a" style="height: 0%; background: transparent;"></div>
+            </div>
+            <div class="tube-label" id="label-a" style="border: 2px solid var(--accent-yellow); padding: 2px; border-radius: 4px;">Ống A<br>(Đang chọn)</div>
+        </div>
+
+        <!-- Ống B -->
+        <div class="test-tube-wrapper">
+            <div class="tube-lip"></div>
+            <div class="test-tube" onclick="selectForSlot('B')">
+                <div class="tube-liquid" id="liquid-b" style="height: 0%; background: transparent;"></div>
+            </div>
+            <div class="tube-label" id="label-b">Ống B<br>(Trống)</div>
+        </div>
+
+        <!-- Ống Phản Ứng C (Ở giữa) -->
+        <div class="reaction-flask-wrapper">
+            <div class="flask-neck"></div>
+            <div class="reaction-flask">
+                <div class="flask-liquid" id="liquid-c" style="height: 0%; background: transparent;"></div>
+                <!-- Bọt khí lơ lửng -->
+                <div class="bubble" id="bubble-1" style="left: 12px; width: 6px; height: 6px; animation-duration: 1.5s;"></div>
+                <div class="bubble" id="bubble-2" style="left: 28px; width: 8px; height: 8px; animation-duration: 1.2s;"></div>
+                <div class="bubble" id="bubble-3" style="left: 45px; width: 5px; height: 5px; animation-duration: 1.8s;"></div>
+            </div>
+            <div class="tube-label" id="label-c" style="color: var(--accent-yellow);">Ống Phản Ứng C<br>(Sẵn sàng)</div>
+        </div>
+    </div>
+
+    <!-- 8 Hợp chất thực tế chuẩn màu -->
+    <div class="compounds-grid">
+        <div class="compound-card" onclick="assignCompound('Nước cất làm ẩm', 'C1', 'linear-gradient(to top, rgba(240, 248, 255, 0.4), rgba(255, 255, 255, 0.75))')">1. Nước cất (Trắng trong suốt)</div>
+        <div class="compound-card" onclick="assignCompound('Dưỡng chất Phóng xạ', 'C2', 'linear-gradient(to top, rgba(241, 196, 15, 0.7), rgba(243, 156, 18, 0.9))')">2. Dưỡng chất (Vàng hổ phách)</div>
+        <div class="compound-card" onclick="assignCompound('Axit Sunfuric đặc', 'C3', 'linear-gradient(to top, rgba(220, 221, 225, 0.3), rgba(245, 246, 250, 0.55))')">3. Axit Sunfuric (Không màu, sánh)</div>
+        <div class="compound-card" onclick="assignCompound('Kiềm mạnh (Phenolphthalein)', 'C4', 'linear-gradient(to top, rgba(232, 67, 147, 0.7), rgba(253, 121, 168, 0.9))')">4. Kiềm mạnh (Hồng tím)</div>
+        <div class="compound-card" onclick="assignCompound('Khoáng chất Sắt Oxit', 'C5', 'linear-gradient(to top, rgba(192, 57, 43, 0.85), rgba(231, 76, 60, 0.95))')">5. Sắt Oxit (Đỏ gỉ sắt)</div>
+        <div class="compound-card" onclick="assignCompound('Khí Nitơ hóa lỏng', 'C6', 'linear-gradient(to top, rgba(0, 206, 201, 0.5), rgba(129, 236, 236, 0.7))')">6. Nitơ lỏng (Xanh ngọc sương giá)</div>
+        <div class="compound-card" onclick="assignCompound('Muối Perchlorate', 'C7', 'linear-gradient(to top, rgba(211, 84, 0, 0.65), rgba(230, 126, 34, 0.85))')">7. Muối Perchlorate (Cam khoáng)</div>
+        <div class="compound-card" onclick="assignCompound('Mẫu đối chứng hữu cơ', 'C8', 'linear-gradient(to top, rgba(46, 204, 113, 0.65), rgba(39, 174, 96, 0.85))')">8. Mẫu hữu cơ (Xanh lá sinh học)</div>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn-primary" onclick="pourAndReact()">🧪 Đổ A & B vào C (Phản Ứng)</button>
+        <button class="btn-secondary" onclick="resetLab()">🔄 Làm Sạch Hệ Thống</button>
+    </div>
+
+    <div class="result-box" id="result-box">
+        📝 <b>Nhật ký Lab:</b> Đang chọn <b>Ống A</b>. Hãy click vào một hợp chất phía trên để rót vào, sau đó chọn Ống B và bấm "Đổ A & B vào C"!
+    </div>
+</div>
+
+<script>
+    let tubeA = { name: null, id: null, style: null };
+    let tubeB = { name: null, id: null, style: null };
+    let activeSlot = 'A';
+
+    function selectForSlot(slot) {
+        activeSlot = slot;
+        document.getElementById('label-a').style.border = slot === 'A' ? '2px solid var(--accent-yellow)' : 'none';
+        document.getElementById('label-b').style.border = slot === 'B' ? '2px solid var(--accent-yellow)' : 'none';
+        document.getElementById('result-box').innerHTML = `📝 <b>Nhật ký Lab:</b> Đang chọn <b>Ống ${slot}</b>. Hãy click vào một hợp chất bên dưới để rót vào ống này.`;
+    }
+
+    function assignCompound(name, id, style) {
+        if (activeSlot === 'A') {
+            if (tubeB.id === id) {
+                alert("Hợp chất này đã có trong Ống B rồi!");
+                return;
+            }
+            tubeA = { name, id, style };
+            document.getElementById('liquid-a').style.height = "75%";
+            document.getElementById('liquid-a').style.background = style;
+            document.getElementById('label-a').innerHTML = `Ống A<br><b>${name}</b>`;
+            activeSlot = 'B';
+        } else {
+            if (tubeA.id === id) {
+                alert("Hợp chất này đã có trong Ống A rồi!");
+                return;
+            }
+            tubeB = { name, id, style };
+            document.getElementById('liquid-b').style.height = "75%";
+            document.getElementById('liquid-b').style.background = style;
+            document.getElementById('label-b').innerHTML = `Ống B<br><b>${name}</b>`;
+            activeSlot = 'A';
+        }
+        selectForSlot(activeSlot);
+    }
+
+    // Danh sách các bảng màu random phong phú khi phản ứng
+    const randomColorPalettes = [
+        "linear-gradient(to top, rgba(155, 89, 182, 0.75), rgba(142, 68, 173, 0.95))", // Tím đậm
+        "linear-gradient(to top, rgba(52, 152, 219, 0.75), rgba(41, 128, 185, 0.95))", // Xanh dương biển
+        "linear-gradient(to top, rgba(26, 188, 156, 0.75), rgba(22, 160, 133, 0.95))", // Xanh ngọc lục bảo
+        "linear-gradient(to top, rgba(230, 126, 34, 0.75), rgba(211, 84, 0, 0.95))",   // Cam lửa
+        "linear-gradient(to top, rgba(241, 196, 15, 0.75), rgba(243, 156, 18, 0.95))",  // Vàng sáng
+        "linear-gradient(to top, rgba(231, 76, 60, 0.75), rgba(192, 57, 43, 0.95))",   // Đỏ san hô
+        "linear-gradient(to top, rgba(46, 204, 113, 0.75), rgba(39, 174, 96, 0.95))",  // Xanh lá mạ
+        "linear-gradient(to top, rgba(52, 73, 94, 0.75), rgba(44, 62, 80, 0.95))"     // Xám khói thép
+    ];
+
+    function pourAndReact() {
+        const resultBox = document.getElementById('result-box');
+        const liquidC = document.getElementById('liquid-c');
+        const bubbles = document.querySelectorAll('.bubble');
+
+        if (!tubeA.id || !tubeB.id) {
+            alert("Bạn cần chọn hóa chất cho cả Ống A và Ống B trước khi đổ vào Ống C!");
+            return;
+        }
+
+        const pairKey = [tubeA.id, tubeB.id].sort().join('+');
+        let title = "";
+        let desc = "";
+        let tag = "";
+        let resultingColor = "";
+        let showBubbles = false;
+
+        // Tỷ lệ khoảng 1/3 (33%) xảy ra phản ứng không thành công / biến tính bất ngờ
+        const isFailureCase = (Math.random() < 0.33);
+
+        if (isFailureCase) {
+            // Trường hợp thí nghiệm sai lệch / phản ứng phụ ngoài ý muốn (1/3 tổ hợp)
+            const randomFailColor = randomColorPalettes[Math.floor(Math.random() * randomColorPalettes.length)];
+            title = "⚠️ PHẢN ỨNG THẤT BẠI / BIẾN TÍNH BẤT NGỜ (Tỷ lệ 1/3)";
+            desc = `Khi đổ <b>${tubeA.name}</b> và <b>${tubeB.name}</b> vào Ống C, dung dịch xảy ra hiện tượng kết tủa đục lơ lửng và đổi màu lệch chuẩn do xung đột thành phần hóa học. Phản ứng không thu được tín hiệu sinh hóa kỳ vọng.`;
+            tag = "Cảnh báo: Sai lệch thành phần / Kết tủa hỏng";
+            resultingColor = randomFailColor;
+            showBubbles = false;
+        } else {
+            // Các trường hợp phản ứng thành công với hơn 30+ biến thể kết quả
+            switch(pairKey) {
+                case 'C1+C2': // Nước cất + Dưỡng chất
+                    title = "🌟 Phản ứng giải phóng khí (Thí nghiệm Labeled Release lịch sử)";
+                    desc = `Nước cất và dưỡng chất hòa quyện vào Ống C, tạo phản ứng sủi bọt khí chứa carbon phóng xạ mô phỏng tàu Viking 1[cite: 2].`;
+                    tag = "Giải phóng khí sinh hóa (Sủi bọt lơ lửng)";
+                    resultingColor = "linear-gradient(to top, rgba(243, 156, 18, 0.8), rgba(241, 196, 15, 0.95))";
+                    showBubbles = true;
+                    break;
+
+                case 'C3+C5': // Axit + Sắt Oxit
+                    title = "⚗️ Phản ứng hòa tan oxit kim loại";
+                    desc = `Axit sunfuric sánh hòa tan Sắt oxit trong Ống C, chuyển hóa thành dung dịch màu cam đậm đặc trưng của thổ nhưỡng Sao Hỏa[cite: 2].`;
+                    tag = "Hòa tan địa chất bề mặt";
+                    resultingColor = "linear-gradient(to top, rgba(211, 84, 0, 0.85), rgba(192, 57, 43, 0.95))";
+                    showBubbles = false;
+                    break;
+
+                case 'C1+C6': // Nước cất + Nitơ lỏng
+                    title = "❄️ Phản ứng ngưng tụ sương giá cực độ";
+                    desc = `Nước cất gặp Nitơ lạnh sâu trong Ống C sinh ra làn hơi trắng mỏng và hiện tượng đóng băng bề mặt mô phỏng đêm Sao Hỏa[cite: 1, 2].`;
+                    tag = "Sương giá & Sốc nhiệt (-78°C)";
+                    resultingColor = "linear-gradient(to top, rgba(180, 220, 240, 0.6), rgba(255, 255, 255, 0.9))";
+                    showBubbles = true;
+                    break;
+
+                case 'C4+C5': // Kiềm + Sắt Oxit
+                    title = "🧪 Phản ứng kết tủa kiềm kim loại";
+                    desc = `Kiềm mạnh hồng tím phản ứng với Sắt oxit trong Ống C tạo lớp kết tủa nâu đỏ sẫm, minh họa tính kiềm thổ mạnh mẽ.`;
+                    tag = "Kết tủa lơ lửng & Đổi màu";
+                    resultingColor = "linear-gradient(to top, rgba(142, 68, 173, 0.75), rgba(192, 57, 43, 0.9))";
+                    showBubbles = true;
+                    break;
+
+                case 'C5+C7': // Sắt Oxit + Muối Perchlorate
+                    title = "🔥 Phản ứng oxy hóa mạnh khoáng chất";
+                    desc = `Sự kết hợp giữa Sắt oxit và Muối Perchlorate trong Ống C tạo thành dung dịch màu cam rỉ độc đáo, phản ánh tính chất hóa học đặc thù[cite: 2].`;
+                    tag = "Oxy hóa mạnh thổ nhưỡng";
+                    resultingColor = "linear-gradient(to top, rgba(230, 126, 34, 0.8), rgba(192, 57, 43, 0.95))";
+                    showBubbles = true;
+                    break;
+
+                case 'C2+C8': // Dưỡng chất + Hữu cơ
+                    title = "🧬 Phản ứng huỳnh quang sinh hóa chuẩn";
+                    desc = `Dưỡng chất và mẫu hữu cơ tạo ra sắc thái xanh hổ phách độc đáo trong Ống C, làm mốc đối chứng chính xác.`;
+                    tag = "Đối chứng sinh học tiêu chuẩn";
+                    resultingColor = "linear-gradient(to top, rgba(39, 174, 96, 0.75), rgba(241, 196, 15, 0.9))";
+                    showBubbles = false;
+                    break;
+
+                default:
+                    // Random chọn một màu sắc hoàn toàn mới cho các tổ hợp khác để tạo sự bất ngờ
+                    const randomSuccessColor = randomColorPalettes[Math.floor(Math.random() * randomColorPalettes.length)];
+                    title = "🔬 Phản ứng tổng hợp hỗn hợp đa thành phần mới";
+                    desc = `Hỗn hợp <b>${tubeA.name}</b> và <b>${tubeB.name}</b> khi kết hợp trong Ống C đã tạo ra một phản ứng hóa học ổn định với sắc thái màu mới lạ và các hạt vi khoáng lơ lửng[cite: 2]!`;
+                    tag = "Khám phá thành công tổ hợp tự do";
+                    resultingColor = randomSuccessColor;
+                    showBubbles = (Math.random() > 0.4); // 60% tỉ lệ có bọt khí lơ lửng
+                    break;
+            }
+        }
+
+        // Hiển thị kết quả lên giao diện ống C
+        liquidC.style.height = "85%";
+        liquidC.style.background = resultingColor;
+
+        bubbles.forEach(b => {
+            b.style.display = showBubbles ? 'block' : 'none';
+        });
+
+        resultBox.style.color = isFailureCase ? "#e74c3c" : "#f39c12";
+        resultBox.innerHTML = `
+            <div style="font-size: 1.02rem; font-weight: bold; margin-bottom: 5px;">${title}</div>
+            <div style="color: #f5f6fa; font-size: 0.9rem; line-height: 1.5; margin-bottom: 6px;">${desc}</div>
+            <div class="history-tag">🏷️ ${tag}</div>
+        `;
+    }
+
+    function resetLab() {
+        tubeA = { name: null, id: null, style: null };
+        tubeB = { name: null, id: null, style: null };
+        document.getElementById('liquid-a').style.height = "0%";
+        document.getElementById('liquid-b').style.height = "0%";
+        document.getElementById('liquid-c').style.height = "0%";
+        document.getElementById('label-a').innerHTML = `Ống A<br>(Trống)`;
+        document.getElementById('label-b').innerHTML = `Ống B<br>(Trống)`;
+        document.getElementById('label-c').innerHTML = `Ống Phản Ứng C<br>(Sẵn sàng)`;
+        
+        document.querySelectorAll('.bubble').forEach(b => b.style.display = 'none');
+        
+        const resultBox = document.getElementById('result-box');
+        resultBox.style.color = "#00cec9";
+        resultBox.innerHTML = `📝 <b>Nhật ký Lab:</b> Đã làm sạch toàn bộ hệ thống. Mời bạn chọn cặp hợp chất mới cho ống A và ống B!`;
+        selectForSlot('A');
+    }
+</script>
+
+</body>
+</html>

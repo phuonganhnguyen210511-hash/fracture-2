@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chương 3: Sojourner & Pathfinder – "Một bước – Một cái nhìn"</title>
+  <style>
+    :root {
+      --bg-mars: #180c07;
+      --panel-bg: rgba(28, 16, 10, 0.88);
+      --accent-amber: #f59e0b;
+      --accent-rust: #ea580c;
+      --accent-bamboo: #84cc16;
+      --accent-cyan: #38bdf8;
+      --text-main: #f8fafc;
+      --text-muted: #cbd5e1;
+      --border-glass: rgba(245, 158, 11, 0.28);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-mars);
+      color: var(--text-main);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #canvas-container {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+    }
+
+    /* Global 5-Chapter Routing Nav Bar */
+    .global-router {
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 30;
+      background: rgba(15, 9, 6, 0.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-glass);
+      border-radius: 999px;
+      padding: 6px 12px;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+    }
+
+    .route-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .route-btn:hover {
+      color: #fff;
+      background: rgba(255,255,255,0.08);
+    }
+
+    .route-btn.active {
+      background: linear-gradient(135deg, var(--accent-rust), var(--accent-amber));
+      color: #fff;
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.45);
+    }
+
+    .release-tag {
+      font-size: 0.7rem;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      padding: 3px 8px;
+      border-radius: 999px;
+      margin-left: 6px;
+      font-weight: 700;
+    }
+
+    /* HUD Header */
+    .hud-header {
+      position: fixed;
+      top: 58px;
+      left: 18px;
+      right: 18px;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      pointer-events: none;
+    }
+
+    .chapter-badge {
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-glass);
+      padding: 10px 16px;
+      border-radius: 14px;
+      pointer-events: auto;
+    }
+
+    .chapter-badge h1 {
+      font-size: 1.05rem;
+      color: #fde047;
+      margin-bottom: 3px;
+    }
+
+    .chapter-badge p {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .telemetry-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      pointer-events: auto;
+    }
+
+    .pill {
+      background: var(--panel-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border-glass);
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+    }
+
+    .pill .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+
+    .pill.active .dot {
+      background: #22c55e;
+      box-shadow: 0 0 8px #22c55e;
+    }
+
+    /* Dialogue Box */
+    .dialogue-box {
+      position: fixed;
+      top: 132px;
+      left: 18px;
+      width: min(390px, calc(100vw - 36px));
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border-glass);
+      border-radius: 16px;
+      padding: 14px 16px;
+      z-index: 10;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+    }
+
+    .speaker-tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 3px 9px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+    }
+
+    .speaker-pathfinder { background: #0284c7; color: #fff; }
+    .speaker-sojourner { background: #65a30d; color: #fff; }
+    .speaker-bit { background: #7c3aed; color: #fff; }
+
+    .dialogue-text {
+      font-size: 0.9rem;
+      line-height: 1.45;
+      color: #f1f5f9;
+      min-height: 40px;
+    }
+
+    .dialogue-controls {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .step-indicator {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .btn-sm {
+      background: linear-gradient(135deg, var(--accent-rust), var(--accent-amber));
+      color: #fff;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* Core Interactive Mechanics Panel (Bottom Split: Mechanic A & Mechanic B) */
+    .mechanics-dock {
+      position: fixed;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(1060px, calc(100vw - 24px));
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 14px;
+      z-index: 10;
+    }
+
+    @media (max-width: 860px) {
+      .mechanics-dock {
+        grid-template-columns: 1fr;
+        max-height: 52vh;
+        overflow-y: auto;
+      }
+    }
+
+    .mech-card {
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-glass);
+      border-radius: 18px;
+      padding: 14px 16px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65);
+    }
+
+    .mech-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 7px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .mech-title {
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: #fde047;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Mechanic A: Blockly Style Drag & Drop */
+    .blockly-workspace {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      gap: 10px;
+    }
+
+    .block-palette, .loop-slot-zone {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px dashed rgba(255, 255, 255, 0.18);
+      border-radius: 12px;
+      padding: 8px;
+      min-height: 138px;
+    }
+
+    .zone-label {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      margin-bottom: 6px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .logic-block {
+      padding: 7px 10px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      cursor: grab;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+      transition: transform 0.12s;
+    }
+
+    .logic-block:active { cursor: grabbing; transform: scale(0.98); }
+    .blk-move { background: #2563eb; color: #fff; border-left: 4px solid #93c5fd; }
+    .blk-sense { background: #65a30d; color: #fff; border-left: 4px solid #bef264; }
+    .blk-avoid { background: #d97706; color: #fff; border-left: 4px solid #fde047; }
+    .blk-loop { background: #7c3aed; color: #fff; border-left: 4px solid #ddd6fe; }
+
+    .loop-container {
+      border: 2px solid #7c3aed;
+      background: rgba(124, 58, 237, 0.12);
+      border-radius: 10px;
+      padding: 6px;
+      min-height: 92px;
+    }
+
+    .loop-container.drag-over {
+      background: rgba(124, 58, 237, 0.28);
+      border-color: #c4b5fd;
+    }
+
+    .blockly-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+      gap: 8px;
+    }
+
+    .status-msg {
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: #fde68a;
+    }
+
+    /* Mechanic B: Thermal Shock & Paperclip Fatigue */
+    .thermal-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .temp-display {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 7px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #38bdf8, #f97316);
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid var(--accent-rust);
+      box-shadow: 0 0 8px rgba(0,0,0,0.6);
+    }
+
+    .paperclip-stage {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    #paperclip-canvas {
+      background: rgba(15, 23, 42, 0.7);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .fatigue-info {
+      flex: 1;
+      font-size: 0.75rem;
+      line-height: 1.4;
+      color: var(--text-muted);
+    }
+
+    .fatigue-counter {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #fb923c;
+      margin-bottom: 4px;
+    }
+
+    /* Modals */
+    .overlay-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 5, 3, 0.85);
+      backdrop-filter: blur(10px);
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      transition: opacity 0.35s ease;
+    }
+
+    .overlay-modal.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .modal-card {
+      background: linear-gradient(160deg, #26140b, #140a05);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      border-radius: 22px;
+      max-width: 500px;
+      width: 100%;
+      padding: 26px;
+      text-align: center;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.85);
+    }
+
+    .modal-card h2 {
+      color: #fde047;
+      font-size: 1.4rem;
+      margin-bottom: 10px;
+    }
+
+    .modal-card p {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+      margin-bottom: 18px;
+    }
+
+    .reward-box {
+      background: rgba(132, 204, 22, 0.12);
+      border: 1px dashed #84cc16;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 18px;
+      text-align: left;
+      font-size: 0.86rem;
+      color: #d9f99d;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #ea580c, #f59e0b);
+      color: #fff;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 8px 22px rgba(234, 88, 12, 0.45);
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <!-- Global 5-Chapter Routing Navigation -->
+  <nav class="global-router" aria-label="Điều hướng 5 Chương">
+    <a href="#ch1" class="route-btn" data-ch="1">Ch.1 Viking</a>
+    <a href="#ch2" class="route-btn" data-ch="2">Ch.2 Ingenuity</a>
+    <a href="#ch3" class="route-btn active" data-ch="3">Ch.3 Sojourner</a>
+    <a href="#ch4" class="route-btn" data-ch="4">Ch.4 Curiosity</a>
+    <a href="#ch5" class="route-btn" data-ch="5">Ch.5 Perseverance</a>
+    <span class="release-tag">Release v1.0</span>
+  </nav>
+
+  <div id="canvas-container"></div>
+
+  <!-- Start Modal -->
+  <div class="overlay-modal" id="start-modal">
+    <div class="modal-card">
+      <div style="font-size: 2.8rem; margin-bottom: 8px;">🎈🥁🎋</div>
+      <h2>CHƯƠNG 3: SOJOURNER & PATHFINDER</h2>
+      <p>"Một bước – Một cái nhìn" (Ares Vallis, 1997)<br>
+      Trải nghiệm cú hạ cánh túi khí 15 lần nảy tưng tưng cùng nhịp <strong>Trống Cơm</strong> trầm ấm và tiếng <strong>Đàn T'rưng</strong> lanh canh nhí nhảnh!</p>
+      <button class="btn-primary" id="btn-start">Thả Túi Khí Pathfinder & Bật Nhạc Dân Tộc</button>
+    </div>
+  </div>
+
+  <!-- End Modal: Sol 83 -->
+  <div class="overlay-modal hidden" id="end-modal">
+    <div class="modal-card">
+      <div style="font-size: 2.8rem; margin-bottom: 8px;">📡✨</div>
+      <h2>SOL 83: TÍN HIỆU CUỐI CÙNG</h2>
+      <p style="font-style: italic; color: #fde68a;">
+        <strong>PATHFINDER:</strong> "Thiết kế 30 ngày, chúng ta đã sống 83 ngày. Em đã làm rất tốt, Soj."<br>
+        <strong>SOJOURNER:</strong> "Một bước - một cái nhìn. Cứ chia nhỏ quãng đường ra chị nhỉ!"
+      </p>
+      <div class="reward-box">
+        <div>🔓 <strong>Unlock Stems:</strong> Trống Cơm (Pathfinder) & Đàn T'rưng (Sojourner)</div>
+        <div style="margin-top: 5px;">✅ <strong>Trạng thái hệ thống:</strong> Sẵn sàng chuyển tiếp sang Chương 4</div>
+      </div>
+      <button class="btn-primary" id="btn-close-end">Tiếp tục khám phá Ares Vallis</button>
+    </div>
+  </div>
+
+  <!-- HUD Header -->
+  <header class="hud-header">
+    <div class="chapter-badge">
+      <h1>CHƯƠNG 3: SOJOURNER & PATHFINDER – "Một bước – Một cái nhìn"</h1>
+      <p>Bối cảnh: Ares Vallis (1997) • Thuật toán Sense-Plan-Act & Sốc nhiệt vật liệu</p>
+    </div>
+    <div class="telemetry-pills">
+      <div class="pill active" id="audio-pill">
+        <span class="dot"></span>
+        <span id="audio-label">Trống Cơm & Đàn T'rưng: Bật</span>
+      </div>
+      <div class="pill" id="haptic-pill">
+        <span class="dot"></span>
+        <span id="haptic-label">Haptic: Sẵn sàng</span>
+      </div>
+      <div class="pill">
+        <span>Cú nảy túi khí: <strong id="bounce-counter" style="color: #fde047;">0 / 15</strong></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Story Dialogue Box -->
+  <aside class="dialogue-box">
+    <span class="speaker-tag speaker-pathfinder" id="speaker-tag">PATHFINDER</span>
+    <div class="dialogue-text" id="dialogue-text">"Chào mừng đến năm 1997! Chị là trạm cơ sở Pathfinder."</div>
+    <div class="dialogue-controls">
+      <span class="step-indicator" id="step-indicator">Thoại 1 / 4</span>
+      <button class="btn-sm" id="btn-next-dialogue">Tiếp theo ▸</button>
+    </div>
+  </aside>
+
+  <!-- Core Mechanics Dock -->
+  <section class="mechanics-dock">
+    <!-- Mechanic A: Sense-Plan-Act Blockly Programming -->
+    <div class="mech-card">
+      <div class="mech-header">
+        <span class="mech-title">🧩 Mechanic A: Lập Trình Vòng Lặp (Sense-Plan-Act)</span>
+        <button class="btn-sm" id="btn-run-code" style="background: linear-gradient(135deg, #16a34a, #65a30d);">▶ Chạy Sojourner</button>
+      </div>
+      <div class="blockly-workspace">
+        <div class="block-palette" id="block-palette">
+          <div class="zone-label">Kho Khối Lệnh (Kéo hoặc Bấm)</div>
+          <div class="logic-block blk-move" draggable="true" data-cmd="MOVE">[ĐI THẲNG 10cm] <span>+</span></div>
+          <div class="logic-block blk-sense" draggable="true" data-cmd="SENSE">[NHÌN / QUÉT CẢM BIẾN] <span>+</span></div>
+          <div class="logic-block blk-avoid" draggable="true" data-cmd="AVOID">[NẾU GẶP ĐÁ -> RẼ] <span>+</span></div>
+        </div>
+        <div class="loop-slot-zone">
+          <div class="zone-label" style="color: #c4b5fd;">🔁 Khối [LẶP LẠI] Tới Đá "Yogi"</div>
+          <div class="loop-container" id="loop-container">
+            <div class="logic-block blk-move" data-cmd="MOVE">[ĐI THẲNG 10cm] <span style="cursor:pointer" onclick="this.parentElement.remove()">✕</span></div>
+          </div>
+          <div class="blockly-actions">
+            <span class="status-msg" id="code-feedback">Mẹo: Cần có khối [NHÌN / QUÉT] trước khi đi!</span>
+            <button class="btn-sm" id="btn-reset-blocks" style="background: rgba(255,255,255,0.12);">Xóa</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mechanic B: Thermal Shock & Paperclip Fatigue -->
+    <div class="mech-card">
+      <div class="mech-header">
+        <span class="mech-title">🌡️ Mechanic B: Thử Nghiệm Sốc Nhiệt (&Delta;T = 70&deg;C)</span>
+        <span style="font-size: 0.75rem; color: #38bdf8; font-weight: 700;">-78&deg;C &harr; -8&deg;C</span>
+      </div>
+      <div class="thermal-controls">
+        <div class="temp-display">
+          <span>Nhiệt độ Ares Vallis: <strong id="temp-val" style="color: #38bdf8;">-78&deg;C (Đêm)</strong></span>
+          <span>Độ giãn nở: <strong id="strain-val">Co cực đại</strong></span>
+        </div>
+        <input type="range" id="slider-temp" min="-78" max="-8" value="-78" />
+
+        <div class="paperclip-stage">
+          <canvas id="paperclip-canvas" width="135" height="72" title="Kéo thanh nhiệt độ qua lại hoặc bấm vào kẹp giấy để uốn"></canvas>
+          <div class="fatigue-info">
+            <div class="fatigue-counter" id="fatigue-count">Chu kỳ co giãn: 0 / 10</div>
+            <div id="fatigue-desc">Kéo thanh nhiệt độ qua lại (Đêm &harr; Ngày) hoặc bấm kẹp giấy để thử độ mỏi kim loại.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // =========================================================
+    // 1. NHẠC CỤ DÂN TỘC VIỆT NAM: TRỐNG CƠM & ĐÀN T'RƯNG (WEB AUDIO)
+    // =========================================================
+    class VietnameseFolkAudio {
+      constructor() {
+        this.ctx = null;
+        this.isEnabled = true;
+        this.trungNotes = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66]; // Ngũ cung C5 - D6
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioCtx();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      // Âm thanh Trống Cơm (Pathfinder): Tiếng trống mặt da căng, có độ nảy trầm ấm đặc trưng ("tình tang")
+      playTrongCom(intensity = 1.0) {
+        if (!this.isEnabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+
+        // Thân trống trầm (Pitch drop mô phỏng độ căng mặt trống cơm dán cơm ở giữa)
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(195 * intensity, now);
+        osc.frequency.exponentialRampToValueAtTime(72, now + 0.16);
+        osc.frequency.exponentialRampToValueAtTime(55, now + 0.35);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.65 * intensity, now + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+
+        // Tiếng vỗ tay trên mặt da trống (Transient slap)
+        const slapOsc = this.ctx.createOscillator();
+        const slapGain = this.ctx.createGain();
+        slapOsc.type = 'triangle';
+        slapOsc.frequency.setValueAtTime(340, now);
+        slapOsc.frequency.exponentialRampToValueAtTime(120, now + 0.06);
+        slapGain.gain.setValueAtTime(0.28 * intensity, now);
+        slapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+
+        osc.connect(gain);
+        slapOsc.connect(slapGain);
+        gain.connect(this.ctx.destination);
+        slapGain.connect(this.ctx.destination);
+
+        osc.start(now);
+        slapOsc.start(now);
+        osc.stop(now + 0.4);
+        slapOsc.stop(now + 0.08);
+      }
+
+      // Âm thanh Đàn T'rưng (Sojourner): Tiếng ống nứa/tre gõ lanh canh, vang rỗng và nhí nhảnh
+      playDanTrung(noteIdx = 0, duration = 0.28) {
+        if (!this.isEnabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const freq = this.trungNotes[noteIdx % this.trungNotes.length];
+
+        // Sóng cơ bản của ống tre
+        const osc1 = this.ctx.createOscillator();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(freq, now);
+
+        // Hài âm đặc trưng của ống tre vát đầu (tỷ lệ ~2.76x tần số gốc)
+        const osc2 = this.ctx.createOscillator();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(freq * 2.75, now);
+
+        // Tiếng gõ dùi tre (Woody attack)
+        const attackOsc = this.ctx.createOscillator();
+        attackOsc.type = 'triangle';
+        attackOsc.frequency.setValueAtTime(freq * 4.1, now);
+
+        const mainGain = this.ctx.createGain();
+        mainGain.gain.setValueAtTime(0.001, now);
+        mainGain.gain.linearRampToValueAtTime(0.32, now + 0.008);
+        mainGain.gain.exponentialRampToValueAtTime(0.0008, now + duration);
+
+        const overtoneGain = this.ctx.createGain();
+        overtoneGain.gain.setValueAtTime(0.14, now);
+        overtoneGain.gain.exponentialRampToValueAtTime(0.0008, now + duration * 0.45);
+
+        const attackGain = this.ctx.createGain();
+        attackGain.gain.setValueAtTime(0.18, now);
+        attackGain.gain.exponentialRampToValueAtTime(0.0008, now + 0.025);
+
+        osc1.connect(mainGain);
+        osc2.connect(overtoneGain);
+        attackOsc.connect(attackGain);
+
+        mainGain.connect(this.ctx.destination);
+        overtoneGain.connect(this.ctx.destination);
+        attackGain.connect(this.ctx.destination);
+
+        osc1.start(now);
+        osc2.start(now);
+        attackOsc.start(now);
+
+        osc1.stop(now + duration + 0.02);
+        osc2.stop(now + duration * 0.5);
+        attackOsc.stop(now + 0.03);
+      }
+
+      // Giai điệu Đàn T'rưng chiến thắng khi Sojourner né đá Yogi thành công
+      playTrungVictory() {
+        const pattern = [0, 2, 3, 4, 5, 6];
+        pattern.forEach((n, idx) => {
+          setTimeout(() => {
+            this.playDanTrung(n, 0.35);
+            if (idx % 2 === 0) this.playTrongCom(0.65);
+          }, idx * 120);
+        });
+      }
+
+      // Chuông cảnh báo khi va phải đá Yogi
+      playWarningClang() {
+        if (!this.isEnabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(160, now);
+        osc.frequency.linearRampToValueAtTime(110, now + 0.35);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.4);
+      }
+    }
+
+    const folkAudio = new VietnameseFolkAudio();
+
+    function triggerHaptic(ms, labelText) {
+      const pill = document.getElementById('haptic-pill');
+      const label = document.getElementById('haptic-label');
+      pill.classList.add('active');
+      label.textContent = labelText;
+      if (navigator.vibrate) {
+        navigator.vibrate(ms);
+      }
+      setTimeout(() => {
+        pill.classList.remove('active');
+        label.textContent = 'Haptic: Sẵn sàng';
+      }, Math.max(250, ms + 80));
+    }
+
+    // =========================================================
+    // 2. KỊCH BẢN HỘI THOẠI
+    // =========================================================
+    const dialogues = [
+      { speaker: "PATHFINDER", css: "speaker-pathfinder", text: '"Chào mừng đến năm 1997! Chị là trạm cơ sở Pathfinder."' },
+      { speaker: "SOJOURNER", css: "speaker-sojourner", text: '"Còn em là Sojourner! To bằng cái lò vi sóng, đi 1cm mỗi giây!"' },
+      { speaker: "BIT", css: "speaker-bit", text: '"Đi chậm như ốc sên vậy?"' },
+      { speaker: "SOJOURNER", css: "speaker-sojourner", text: '"Nhưng em tự biết né đá, không cần đợi lệnh từ Trái Đất cách 10 phút!"' }
+    ];
+    let dialogueIdx = 0;
+
+    document.getElementById('btn-next-dialogue').addEventListener('click', () => {
+      dialogueIdx = (dialogueIdx + 1) % dialogues.length;
+      const d = dialogues[dialogueIdx];
+      const tag = document.getElementById('speaker-tag');
+      tag.textContent = d.speaker;
+      tag.className = `speaker-tag ${d.css}`;
+      document.getElementById('dialogue-text').textContent = d.text;
+      document.getElementById('step-indicator').textContent = `Thoại ${dialogueIdx + 1} / ${dialogues.length}`;
+      folkAudio.playDanTrung(dialogueIdx + 1, 0.2);
+    });
+
+    // =========================================================
+    // 3. THREE.JS 3D SCENE: ARES VALLIS, AIRBAGS, PATHFINDER, SOJOURNER & YOGI ROCK
+    // =========================================================
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xb45309);
+    scene.fog = new THREE.FogExp2(0xb45309, 0.024);
+
+    const camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.1, 200);
+    camera.position.set(0, 6.2, 11.5);
+    camera.lookAt(0, 0.8, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    container.appendChild(renderer.domElement);
+
+    const ambientLight = new THREE.AmbientLight(0xffedd5, 0.65);
+    scene.add(ambientLight);
+
+    const sunLight = new THREE.DirectionalLight(0xfffbeb, 1.45);
+    sunLight.position.set(10, 18, 12);
+    sunLight.castShadow = true;
+    scene.add(sunLight);
+
+    // Mặt đất thung lũng Ares Vallis (1997)
+    const groundGeo = new THREE.PlaneGeometry(140, 140, 64, 64);
+    groundGeo.rotateX(-Math.PI / 2);
+    const pos = groundGeo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const z = pos.getZ(i);
+      const dist = Math.hypot(x, z);
+      const y = dist < 5.5 ? 0 : Math.sin(x * 0.35) * Math.cos(z * 0.35) * 0.35;
+      pos.setY(i, y);
+    }
+    groundGeo.computeVertexNormals();
+    const ground = new THREE.Mesh(
+      groundGeo,
+      new THREE.MeshStandardMaterial({ color: 0xc2410c, roughness: 0.92 })
+    );
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // --- TÚI KHÍ KHỔNG LỒ (15 LẦN NẢY) & TRẠM PATHFINDER (CÁNH HOA KIM LOẠI) ---
+    const landerGroup = new THREE.Group();
+    landerGroup.position.set(-2.6, 0, 0);
+    scene.add(landerGroup);
+
+    // Khối bóng túi khí chùm (Cluster of Airbags)
+    const airbagGroup = new THREE.Group();
+    const airbagMat = new THREE.MeshStandardMaterial({
+      color: 0xfef3c7,
+      roughness: 0.45,
+      metalness: 0.1
+    });
+    const lobeOffsets = [
+      [0, 0.7, 0], [0.65, 0.35, 0.4], [-0.65, 0.35, 0.4],
+      [0.65, 0.35, -0.4], [-0.65, 0.35, -0.4], [0, 0.35, 0.75], [0, 0.35, -0.75]
+    ];
+    lobeOffsets.forEach(([ox, oy, oz]) => {
+      const lobe = new THREE.Mesh(new THREE.SphereGeometry(0.68, 20, 20), airbagMat);
+      lobe.position.set(ox, oy, oz);
+      lobe.castShadow = true;
+      airbagGroup.add(lobe);
+    });
+    landerGroup.add(airbagGroup);
+
+    // Trạm cơ sở Pathfinder với 3 cánh hoa kim loại mở ra (Petals)
+    const pathfinderBase = new THREE.Group();
+    pathfinderBase.visible = false;
+    landerGroup.add(pathfinderBase);
+
+    const centerDeck = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.95, 0.95, 0.18, 3),
+      new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.6, roughness: 0.3 })
+    );
+    centerDeck.position.y = 0.12;
+    centerDeck.castShadow = true;
+    pathfinderBase.add(centerDeck);
+
+    // Cột camera IMP & Đèn tín hiệu Sol 83
+    const impMast = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.05, 0.05, 1.1, 12),
+      new THREE.MeshStandardMaterial({ color: 0x334155 })
+    );
+    impMast.position.set(0, 0.65, -0.2);
+    pathfinderBase.add(impMast);
+
+    const beaconMat = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.5
+    });
+    const beaconLight = new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 16), beaconMat);
+    beaconLight.position.set(0, 1.25, -0.2);
+    pathfinderBase.add(beaconLight);
+
+    // 3 Cánh hoa pin mặt trời mở bung
+    const petals = [];
+    const petalMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, metalness: 0.7, roughness: 0.25 });
+    for (let i = 0; i < 3; i++) {
+      const pivot = new THREE.Group();
+      pivot.rotation.y = (i * Math.PI * 2) / 3;
+      const petalMesh = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.06, 1.1), petalMat);
+      petalMesh.position.set(0.85, 0.12, 0);
+      petalMesh.castShadow = true;
+      pivot.add(petalMesh);
+      pivot.rotation.z = 1.1; // Ban đầu gập lại
+      pathfinderBase.add(pivot);
+      petals.push(pivot);
+    }
+
+    // --- XE TỰ HÀNH SOJOURNER (TO BẰNG LÒ VI SÓNG) ---
+    const sojourner = new THREE.Group();
+    sojourner.position.set(-1.3, 0, 0.4);
+    sojourner.visible = false;
+    scene.add(sojourner);
+
+    // Thân xe pin mặt trời phẳng
+    const roverBody = new THREE.Mesh(
+      new THREE.BoxGeometry(0.75, 0.22, 0.55),
+      new THREE.MeshStandardMaterial({ color: 0x1e40af, metalness: 0.75, roughness: 0.25 })
+    );
+    roverBody.position.y = 0.28;
+    roverBody.castShadow = true;
+    sojourner.add(roverBody);
+
+    // 6 Bánh xe Rocker-Bogie
+    const wheelGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.08, 16);
+    wheelGeo.rotateX(Math.PI / 2);
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
+    [[-0.28, 0.32], [0, 0.32], [0.28, 0.32], [-0.28, -0.32], [0, -0.32], [0.28, -0.32]].forEach(([wx, wz]) => {
+      const w = new THREE.Mesh(wheelGeo, wheelMat);
+      w.position.set(wx, 0.11, wz);
+      w.castShadow = true;
+      sojourner.add(w);
+    });
+
+    // Tia laser quét chướng ngại vật (Sense beam)
+    const laserBeam = new THREE.Mesh(
+      new THREE.ConeGeometry(0.28, 1.1, 16, 1, true),
+      new THREE.MeshBasicMaterial({ color: 0x84cc16, transparent: true, opacity: 0.38, side: THREE.DoubleSide })
+    );
+    laserBeam.rotation.z = -Math.PI / 2;
+    laserBeam.position.set(0.85, 0.28, 0);
+    laserBeam.visible = false;
+    sojourner.add(laserBeam);
+
+    // --- TẢNG ĐÁ "YOGI" (MỤC TIÊU KHẢO SÁT) ---
+    const yogiRock = new THREE.Mesh(
+      new THREE.DodecahedronGeometry(0.75, 1),
+      new THREE.MeshStandardMaterial({ color: 0x7c2d12, roughness: 0.88 })
+    );
+    yogiRock.position.set(2.3, 0.52, 0.4);
+    yogiRock.scale.set(1.2, 0.95, 1.1);
+    yogiRock.castShadow = true;
+    yogiRock.receiveShadow = true;
+    scene.add(yogiRock);
+
+    // Đá nhỏ cảnh quan xung quanh
+    for (let i = 0; i < 35; i++) {
+      const r = new THREE.Mesh(
+        new THREE.DodecahedronGeometry(0.18 + Math.random() * 0.22, 0),
+        new THREE.MeshStandardMaterial({ color: 0x9a3412, roughness: 0.9 })
+      );
+      const ang = Math.random() * Math.PI * 2;
+      const rad = 4.5 + Math.random() * 18;
+      r.position.set(Math.cos(ang) * rad, 0.12, Math.sin(ang) * rad);
+      scene.add(r);
+    }
+
+    // =========================================================
+    // 4. LOGIC 15 CÚ NẢY TÚI KHÍ & MỞ CÁNH HOA KIM LOẠI
+    // =========================================================
+    let simStarted = false;
+    let bounceCount = 0;
+    const maxBounces = 15;
+    let bounceHeight = 3.2;
+    let bounceVelY = 0;
+    let airbagPhase = 'idle'; // 'idle' | 'bouncing' | 'deflating' | 'opened'
+    let petalOpenProgress = 0;
+
+    document.getElementById('btn-start').addEventListener('click', () => {
+      document.getElementById('start-modal').classList.add('hidden');
+      folkAudio.init();
+      simStarted = true;
+      airbagPhase = 'bouncing';
+      bounceHeight = 3.4;
+      bounceVelY = 0;
+    });
+
+    document.getElementById('audio-pill').addEventListener('click', () => {
+      folkAudio.isEnabled = !folkAudio.isEnabled;
+      const pill = document.getElementById('audio-pill');
+      const label = document.getElementById('audio-label');
+      if (folkAudio.isEnabled) {
+        pill.classList.add('active');
+        label.textContent = "Trống Cơm & Đàn T'rưng: Bật";
+        folkAudio.playDanTrung(3, 0.25);
+      } else {
+        pill.classList.remove('active');
+        label.textContent = "Âm thanh: Tắt";
+      }
+    });
+
+    // =========================================================
+    // 5. MECHANIC A: KÉO THẢ KHỐI LỆNH SENSE-PLAN-ACT LOOP
+    // =========================================================
+    const loopContainer = document.getElementById('loop-container');
+    const codeFeedback = document.getElementById('code-feedback');
+    let draggedCmd = null;
+    let draggedClass = null;
+    let draggedText = null;
+
+    document.querySelectorAll('#block-palette .logic-block').forEach(blk => {
+      blk.addEventListener('dragstart', () => {
+        draggedCmd = blk.dataset.cmd;
+        draggedClass = blk.className;
+        draggedText = blk.textContent.replace('+', '').trim();
+      });
+      // Hỗ trợ bấm trực tiếp cho mobile/touchpad
+      blk.addEventListener('click', () => {
+        addBlockToLoop(blk.dataset.cmd, blk.className, blk.textContent.replace('+', '').trim());
+        folkAudio.playDanTrung(Math.floor(Math.random() * 5), 0.16);
+      });
+    });
+
+    loopContainer.addEventListener('dragover', e => {
+      e.preventDefault();
+      loopContainer.classList.add('drag-over');
+    });
+
+    loopContainer.addEventListener('dragleave', () => {
+      loopContainer.classList.remove('drag-over');
+    });
+
+    loopContainer.addEventListener('drop', e => {
+      e.preventDefault();
+      loopContainer.classList.remove('drag-over');
+      if (draggedCmd) {
+        addBlockToLoop(draggedCmd, draggedClass, draggedText);
+        folkAudio.playDanTrung(Math.floor(Math.random() * 5), 0.16);
+      }
+    });
+
+    function addBlockToLoop(cmd, cls, text) {
+      if (loopContainer.children.length >= 4) return;
+      const el = document.createElement('div');
+      el.className = cls;
+      el.dataset.cmd = cmd;
+      el.innerHTML = `${text} <span style="cursor:pointer" onclick="this.parentElement.remove()">✕</span>`;
+      loopContainer.appendChild(el);
+    }
+
+    document.getElementById('btn-reset-blocks').addEventListener('click', () => {
+      loopContainer.innerHTML = '';
+      sojourner.position.set(-1.3, 0, 0.4);
+      sojourner.rotation.set(0, 0, 0);
+      laserBeam.visible = false;
+      codeFeedback.textContent = 'Đã xóa vòng lặp. Hãy xếp lại thuật toán!';
+    });
+
+    let roverAnimating = false;
+
+    document.getElementById('btn-run-code').addEventListener('click', () => {
+      if (roverAnimating) return;
+      if (airbagPhase !== 'opened') {
+        codeFeedback.textContent = '⏳ Chờ túi khí Pathfinder xẹp xuống và mở cánh hoa đã nhé!';
+        return;
+      }
+
+      const cmds = Array.from(loopContainer.children).map(el => el.dataset.cmd);
+      if (cmds.length === 0) {
+        codeFeedback.textContent = '⚠️ Vòng lặp đang trống! Hãy thêm khối lệnh.';
+        return;
+      }
+
+      const hasSense = cmds.includes('SENSE');
+      const hasAvoid = cmds.includes('AVOID');
+      const hasMove = cmds.includes('MOVE');
+
+      roverAnimating = true;
+      sojourner.position.set(-1.3, 0, 0.4);
+      sojourner.rotation.set(0, 0, 0);
+
+      if (!hasSense || !hasAvoid || !hasMove) {
+        // Kịch bản thiếu khối [NHÌN / QUÉT CẢM BIẾN] -> Đâm thẳng vào đá Yogi!
+        codeFeedback.textContent = '🚨 Thiếu [NHÌN / QUÉT] hoặc [NẾU GẶP ĐÁ -> RẼ]! Sojourner đang lao thẳng...';
+        let step = 0;
+        const crashInterval = setInterval(() => {
+          step++;
+          sojourner.position.x += 0.22;
+          folkAudio.playDanTrung(step % 3, 0.14);
+          if (sojourner.position.x >= 1.35) {
+            clearInterval(crashInterval);
+            sojourner.rotation.z = 0.25;
+            folkAudio.playWarningClang();
+            triggerHaptic(200, 'Haptic: Va chạm đá Yogi! (200ms)');
+            codeFeedback.textContent = '💥 Đâm thẳng vào đá Yogi! Hãy thêm [NHÌN / QUÉT] và [NẾU GẶP ĐÁ -> RẼ].';
+            roverAnimating = false;
+          }
+        }, 180);
+      } else {
+        // Kịch bản đúng: Đo -> Phát hiện đá -> Rẽ -> Đến mục tiêu đá Yogi!
+        codeFeedback.textContent = '✅ Đang chạy: Đo -> Quét tia laser -> Phát hiện đá Yogi -> Rẽ tránh!';
+        let step = 0;
+        const successInterval = setInterval(() => {
+          step++;
+          laserBeam.visible = step % 2 === 1;
+          folkAudio.playDanTrung(step, 0.18);
+
+          if (step <= 5) {
+            // Tiến thẳng & quét cảm biến
+            sojourner.position.x += 0.28;
+            if (step === 5) {
+              triggerHaptic(30, 'Haptic: "Ting!" Quét thấy đá Yogi (30ms)');
+            }
+          } else if (step <= 9) {
+            // Rẽ vòng cung né đá Yogi
+            sojourner.rotation.y = -0.55;
+            sojourner.position.x += 0.25;
+            sojourner.position.z += 0.22;
+          } else if (step <= 13) {
+            // Tiếp cận sát bên cạnh đá Yogi để phân tích
+            sojourner.rotation.y = 0.45;
+            sojourner.position.x += 0.22;
+            sojourner.position.z -= 0.14;
+          } else {
+            clearInterval(successInterval);
+            laserBeam.visible = true;
+            folkAudio.playTrungVictory();
+            codeFeedback.textContent = '🎉 Tuyệt vời! Sojourner đã né đá và tiếp cận mục tiêu Yogi thành công!';
+            roverAnimating = false;
+            checkSol83Completion();
+          }
+        }, 210);
+      }
+    });
+
+    // =========================================================
+    // 6. MECHANIC B: THỬ NGHIỆM SỐC NHIỆT & KẸP GIẤY MỎI VẬT LIỆU
+    // =========================================================
+    const sliderTemp = document.getElementById('slider-temp');
+    const tempValEl = document.getElementById('temp-val');
+    const strainValEl = document.getElementById('strain-val');
+    const fatigueCountEl = document.getElementById('fatigue-count');
+    const fatigueDescEl = document.getElementById('fatigue-desc');
+    const clipCanvas = document.getElementById('paperclip-canvas');
+    const clipCtx = clipCanvas.getContext('2d');
+
+    let bendCount = 0;
+    let isBroken = false;
+    let lastExtreme = 'cold'; // 'cold' (-78) | 'hot' (-8)
+    let bendAngle = -0.35;
+
+    function drawPaperclip(angle, broken) {
+      clipCtx.clearRect(0, 0, clipCanvas.width, clipCanvas.height);
+      const cx = clipCanvas.width / 2;
+      const cy = clipCanvas.height / 2 + 6;
+
+      clipCtx.lineWidth = 4;
+      clipCtx.lineCap = 'round';
+      clipCtx.strokeStyle = broken ? '#ef4444' : (bendCount >= 7 ? '#f59e0b' : '#38bdf8');
+
+      if (!broken) {
+        // Nửa trái kẹp giấy
+        clipCtx.beginPath();
+        clipCtx.moveTo(cx - 42, cy);
+        clipCtx.lineTo(cx, cy);
+        clipCtx.stroke();
+
+        // Nửa phải uốn gập theo nhiệt độ
+        clipCtx.save();
+        clipCtx.translate(cx, cy);
+        clipCtx.rotate(angle);
+        clipCtx.beginPath();
+        clipCtx.moveTo(0, 0);
+        clipCtx.lineTo(42, 0);
+        clipCtx.stroke();
+        clipCtx.restore();
+      } else {
+        // Kẹp giấy đã gãy đôi do mỏi nhiệt
+        clipCtx.beginPath();
+        clipCtx.moveTo(cx - 44, cy - 4);
+        clipCtx.lineTo(cx - 6, cy + 4);
+        clipCtx.stroke();
+
+        clipCtx.beginPath();
+        clipCtx.moveTo(cx + 8, cy + 8);
+        clipCtx.lineTo(cx + 44, cy - 6);
+        clipCtx.stroke();
+
+        clipCtx.fillStyle = '#fca5a5';
+        clipCtx.font = 'bold 11px sans-serif';
+        clipCtx.fillText('GÃY DO MỎI!', cx - 32, 16);
+      }
+    }
+
+    function registerBendCycle(newExtreme) {
+      if (isBroken) return;
+      bendCount++;
+      lastExtreme = newExtreme;
+      fatigueCountEl.textContent = `Chu kỳ co giãn: ${bendCount} / 10`;
+      folkAudio.playDanTrung(bendCount % 6, 0.14);
+
+      if (bendCount >= 10) {
+        isBroken = true;
+        folkAudio.playWarningClang();
+        triggerHaptic(150, 'Haptic: Kẹp giấy gãy do sốc nhiệt!');
+        fatigueDescEl.innerHTML =
+          '<strong style="color:#fca5a5;">GÃY VẬT LIỆU!</strong> Chênh lệch &Delta;T = 70&deg;C làm kim loại mỏi và nứt gãy. Đó là lý do Sojourner cần <strong>bộ sưởi giữ nhiệt</strong> bảo vệ linh kiện bán dẫn!';
+        checkSol83Completion();
+      }
+    }
+
+    sliderTemp.addEventListener('input', () => {
+      const t = parseInt(sliderTemp.value, 10);
+      const ratio = (t + 78) / 70; // 0 (-78°C) -> 1 (-8°C)
+      bendAngle = -0.45 + ratio * 0.9;
+
+      if (t <= -55) {
+        tempValEl.textContent = `${t}°C (Đêm lạnh)`;
+        tempValEl.style.color = '#38bdf8';
+        strainValEl.textContent = 'Co ngót mạnh';
+        if (lastExtreme === 'hot') registerBendCycle('cold');
+      } else if (t >= -25) {
+        tempValEl.textContent = `${t}°C (Ngày ấm)`;
+        tempValEl.style.color = '#fb923c';
+        strainValEl.textContent = 'Giãn nở mạnh';
+        if (lastExtreme === 'cold') registerBendCycle('hot');
+      } else {
+        tempValEl.textContent = `${t}°C (Chuyển tiếp)`;
+        tempValEl.style.color = '#fde047';
+        strainValEl.textContent = 'Ứng suất nhiệt';
+      }
+      drawPaperclip(bendAngle, isBroken);
+    });
+
+    clipCanvas.addEventListener('click', () => {
+      if (isBroken) return;
+      const next = lastExtreme === 'cold' ? 'hot' : 'cold';
+      sliderTemp.value = next === 'hot' ? -8 : -78;
+      sliderTemp.dispatchEvent(new Event('input'));
+    });
+
+    drawPaperclip(bendAngle, false);
+
+    // =========================================================
+    // 7. SCENE END: SOL 83 & GLOBAL ROUTING CHECK
+    // =========================================================
+    let sol83Triggered = false;
+    function checkSol83Completion() {
+      if (sol83Triggered) return;
+      if (isBroken || !roverAnimating) {
+        // Kích hoạt màn kết Sol 83 sau khi hoàn thành tương tác
+        if (isBroken && sojourner.position.x > 0.5) {
+          sol83Triggered = true;
+          setTimeout(() => {
+            folkAudio.playTrungVictory();
+            document.getElementById('end-modal').classList.remove('hidden');
+          }, 1200);
+        }
+      }
+    }
+
+    document.getElementById('btn-close-end').addEventListener('click', () => {
+      document.getElementById('end-modal').classList.add('hidden');
+    });
+
+    // Routing tổng thể 5 chương (Hash Router SPA)
+    document.querySelectorAll('.route-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const ch = btn.dataset.ch;
+        if (ch !== '3') {
+          e.preventDefault();
+          alert(`Hệ thống Routing v1.0 đã xác thực tuyến đường sang Chương ${ch} (#ch${ch}). Hiện tại bạn đang ở Chương 3: Sojourner & Pathfinder.`);
+        }
+      });
+    });
+
+    // =========================================================
+    // 8. ANIMATION LOOP
+    // =========================================================
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.05);
+      const elapsed = clock.getElapsedTime();
+
+      if (simStarted) {
+        if (airbagPhase === 'bouncing') {
+          // Vật lý túi khí nảy tưng tưng 15 lần trên bề mặt Ares Vallis
+          const gravity = 14.5;
+          bounceVelY -= gravity * dt;
+          bounceHeight += bounceVelY * dt;
+
+          airbagGroup.rotation.x += dt * 3.2;
+          airbagGroup.rotation.z += dt * 2.4;
+
+          if (bounceHeight <= 0.72) {
+            bounceHeight = 0.72;
+            bounceCount++;
+            document.getElementById('bounce-counter').textContent = `${bounceCount} / ${maxBounces}`;
+
+            // Nhịp Trống Cơm rung mạnh theo mỗi cú nảy & Haptic 200ms
+            const factor = Math.max(0.25, 1 - bounceCount / (maxBounces + 2));
+            folkAudio.playTrongCom(factor);
+            triggerHaptic(200, `Haptic: Túi khí chạm đất #${bounceCount} (200ms)`);
+
+            if (bounceCount >= maxBounces) {
+              airbagPhase = 'deflating';
+            } else {
+              // Độ cao nảy giảm dần sau mỗi lần chạm đất
+              bounceVelY = Math.sqrt(2 * gravity * (3.1 * factor));
+            }
+          }
+          airbagGroup.position.y = bounceHeight;
+        } else if (airbagPhase === 'deflating') {
+          // Túi khí xẹp xuống, mở ra cánh hoa kim loại Pathfinder
+          airbagGroup.scale.y = THREE.MathUtils.lerp(airbagGroup.scale.y, 0.05, 0.08);
+          airbagGroup.scale.x = THREE.MathUtils.lerp(airbagGroup.scale.x, 1.35, 0.06);
+          airbagGroup.scale.z = THREE.MathUtils.lerp(airbagGroup.scale.z, 1.35, 0.06);
+          airbagGroup.position.y = THREE.MathUtils.lerp(airbagGroup.position.y, 0.05, 0.08);
+
+          if (airbagGroup.scale.y < 0.09) {
+            airbagGroup.visible = false;
+            pathfinderBase.visible = true;
+            sojourner.visible = true;
+            airbagPhase = 'opened';
+            folkAudio.playDanTrung(4, 0.4);
+          }
+        } else if (airbagPhase === 'opened') {
+          // Mở 3 cánh hoa kim loại Pathfinder
+          if (petalOpenProgress < 1) {
+            petalOpenProgress = Math.min(1, petalOpenProgress + dt * 0.8);
+            petals.forEach(p => {
+              p.rotation.z = THREE.MathUtils.lerp(1.1, 0, petalOpenProgress);
+            });
+          }
+          // Nhấp nháy đèn tín hiệu Pathfinder (Sol 83 beacon)
+          beaconMat.emissiveIntensity = 0.6 + Math.sin(elapsed * 5) * 0.5;
+        }
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    animate();
+  </script>
+</body>
+</html>

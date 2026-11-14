@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô Phỏng Sứ Mệnh Opportunity (Oppy) - NASA Space Apps</title>
+    <!-- Tailwind CSS CDN để giao diện đẹp mắt và hiện đại -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen p-6">
+
+    <div class="max-w-3xl mx-auto space-y-6">
+        
+        <!-- HEADER -->
+        <header class="border-b border-slate-800 pb-4 flex justify-between items-center">
+            <div>
+                <span class="text-xs uppercase tracking-wider text-amber-500 font-bold">NASA Space Apps Challenge • Oppy Storytelling</span>
+                <h1 class="text-2xl font-black text-white mt-1">Trạm Điều Khiển Mặt Trận: Sứ Mệnh Opportunity</h1>
+            </div>
+            <div class="text-right">
+                <span class="text-xs text-slate-400 block">Vị trí hiện tại</span>
+                <span class="text-sm font-bold text-amber-400">Đồng bằng Meridiani Planum</span>
+            </div>
+        </header>
+
+        <!-- PHẦN 1: MINIGAME THANH TRƯỢT NĂNG LƯỢNG (ENERGY BUDGET) -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-amber-300 flex items-center gap-2">
+                    <span>⚡</span> 1. Minigame Quản Lý Ngân Sách Năng Lượng (Energy Budget)
+                </h2>
+                <span id="sol-counter" class="text-xs px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">Sol thứ 5111 (Ngày cuối)</span>
+            </div>
+            
+            <p class="text-sm text-slate-300 mb-6 leading-relaxed">
+                Trên Sao Hỏa, bụi bám vào tấm pin mặt trời làm giảm khả năng thu năng lượng. Hãy điều chỉnh các hoạt động của Oppy để cân bằng điện năng giữa sưởi ấm ban đêm và vận hành ban ngày!
+            </p>
+
+            <!-- Trực quan hóa tình trạng Pin -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700">
+                    <span class="text-xs text-slate-400 block">Tấm Pin Mặt Trời (Dust Cover)</span>
+                    <span id="dust-status" class="text-lg font-bold text-emerald-400">Sạch 85%</span>
+                </div>
+                <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700">
+                    <span class="text-xs text-slate-400 block">Dự Trữ Pin (Battery Level)</span>
+                    <span id="battery-level-text" class="text-lg font-bold text-sky-400">75 Wh</span>
+                </div>
+                <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700">
+                    <span class="text-xs text-slate-400 block">Trạng Thái Hệ Thống</span>
+                    <span id="system-status" class="text-sm font-bold text-emerald-400">Hoạt động ổn định</span>
+                </div>
+            </div>
+
+            <!-- Thanh điều khiển tiêu thụ năng lượng -->
+            <div class="space-y-4 mb-6">
+                <div>
+                    <div class="flex justify-between text-xs text-slate-300 mb-1">
+                        <span>Công suất thiết bị hoạt động (Khoa học/Di chuyển):</span>
+                        <span id="power-val" class="font-bold text-amber-400">300 Wh/ngày</span>
+                    </div>
+                    <input type="range" id="power-slider" min="100" max="600" step="25" value="300" 
+                        class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                </div>
+            </div>
+
+            <div id="alert-box" class="p-4 rounded-xl bg-amber-950/40 border-l-4 border-amber-500 text-sm text-amber-200">
+                💡 <strong>Lời khuyên từ Oppy:</strong> Năng lượng nạp vào từ ánh nắng hiện tại là ~350 Wh/ngày. Hãy giữ mức tiêu thụ thấp hơn năng lượng nạp để không bị sập nguồn về đêm!
+            </div>
+        </section>
+
+        <!-- PHẦN 2: MÔ PHỎNG ĐỘ TRỄ SÓNG VÔ TUYẾN (5 - 20 PHÚT) -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+            <h2 class="text-lg font-bold text-sky-300 flex items-center gap-2 mb-4">
+                <span>📡</span> 2. Mô Phỏng Độ Trễ Tín Hiệu Trái Đất – Sao Hỏa (Signal Delay)
+            </h2>
+            
+            <p class="text-sm text-slate-300 mb-6 leading-relaxed">
+                Khoảng cách giữa Trái Đất và Sao Hỏa thay đổi liên tục, tạo ra độ trễ tín hiệu mất từ <strong>5 đến 20 phút</strong> cho mỗi chiều gửi lệnh. Bạn không thể điều khiển robot theo thời gian thực!
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="p-4 bg-slate-800/60 rounded-xl border border-slate-700">
+                    <label class="text-xs text-slate-400 block mb-2">Chọn khoảng cách giả lập (Độ trễ tương ứng):</label>
+                    <select id="delay-time-select" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-sky-500">
+                        <option value="5">Gần nhất (~5 phút độ trễ)</option>
+                        <option value="12" selected>Trung bình (~12 phút độ trễ)</option>
+                        <option value="20">Xa nhất (~20 phút độ trễ)</option>
+                    </select>
+                </div>
+                <div class="p-4 bg-slate-800/60 rounded-xl border border-slate-700 flex flex-col justify-center items-center text-center">
+                    <span class="text-xs text-slate-400">Trạng thái truyền sóng</span>
+                    <span id="delay-status-text" class="text-base font-bold text-sky-400 mt-1">Sẵn sàng truyền lệnh</span>
+                </div>
+            </div>
+
+            <!-- Khu vực log hiển thị tiến trình gửi lệnh -->
+            <div id="log-console" class="bg-slate-950 border border-slate-800 rounded-xl p-4 h-32 overflow-y-auto text-xs font-mono text-slate-300 mb-4">
+                [00:00:00] Hệ thống liên lạc Deep Space Network (DSN) đã kết nối.<br>
+                [00:00:01] Chờ kỹ sư truyền lệnh khoan đá tại Hố Perseverance...
+            </div>
+
+            <button id="send-cmd-btn" class="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-sky-900/40 flex items-center justify-center gap-2">
+                <span>🚀 Truyền lệnh khẩn cấp tới Opportunity</span>
+            </button>
+        </section>
+
+    </div>
+
+    <!-- SCRIPT XỬ LÝ LOGIC JAVASCRIPT THUẦN -->
+    <script>
+        // --- PHẦN 1 LOGIC: ENERGY BUDGET ---
+        const powerSlider = document.getElementById('power-slider');
+        const powerVal = document.getElementById('power-val');
+        const batteryText = document.getElementById('battery-level-text');
+        const systemStatus = document.getElementById('system-status');
+        const alertBox = document.getElementById('alert-box');
+
+        const dailyHarvest = 350; // Năng lượng thu được cố định từ pin mặt trời (Wh)
+
+        powerSlider.addEventListener('input', (e) => {
+            const consumption = parseInt(e.target.value);
+            powerVal.innerText = consumption + " Wh/ngày";
+            
+            const netBalance = dailyHarvest - consumption;
+            let batteryLevel = 75 + Math.round(netBalance / 10);
+            if (batteryLevel > 100) batteryLevel = 100;
+            if (batteryLevel < 0) batteryLevel = 0;
+
+            batteryText.innerText = batteryLevel + " Wh";
+
+            if (netBalance >= 0) {
+                systemStatus.innerText = "Năng lượng ổn định (Dư dả)";
+                systemStatus.className = "text-sm font-bold text-emerald-400";
+                alertBox.className = "p-4 rounded-xl bg-emerald-950/40 border-l-4 border-emerald-500 text-sm text-emerald-200";
+                alertBox.innerHTML = `✅ <strong>Tuyệt vời!</strong> Thu vào (${dailyHarvest} Wh) lớn hơn tiêu thụ (${consumption} Wh). Pin được sạc đầy để vượt qua đêm lạnh -90°C.`;
+            } else if (netBalance > -150) {
+                systemStatus.innerText = "Cảnh báo: Thâm hụt năng lượng nhẹ";
+                systemStatus.className = "text-sm font-bold text-amber-400";
+                alertBox.className = "p-4 rounded-xl bg-amber-950/40 border-l-4 border-amber-500 text-sm text-amber-200";
+                alertBox.innerHTML = `⚠️ <strong>Cảnh báo:</strong> Bạn đang tiêu thụ nhiều hơn năng lượng nạp. Oppy phải dùng đến điện dự trữ tích lũy từ các Sol trước!`;
+            } else {
+                systemStatus.innerText = "NGUY HIỂM: Cạn kiệt nguồn điện!";
+                systemStatus.className = "text-sm font-bold text-rose-500";
+                alertBox.className = "p-4 rounded-xl bg-rose-950/40 border-l-4 border-rose-500 text-sm text-rose-200";
+                alertBox.innerHTML = `❌ <strong>SẮP SẬP NGUỒN!</strong> Tiêu thụ quá cao (${consumption} Wh) khiến pin cạn kiệt. Hệ thống sưởi ngắt và robot có nguy cơ vĩnh viễn đóng băng!`;
+            }
+        });
+
+        // --- PHẦN 2 LOGIC: ĐỘ TRỄ SÓNG VÔ TUYẾN ---
+        const sendBtn = document.getElementById('send-cmd-btn');
+        const delaySelect = document.getElementById('delay-time-select');
+        const delayStatusText = document.getElementById('delay-status-text');
+        const logConsole = document.getElementById('log-console');
+
+        sendBtn.addEventListener('click', () => {
+            const delayMinutes = parseInt(delaySelect.value);
+            sendBtn.disabled = true;
+            sendBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            
+            let secondsRemaining = delayMinutes * 5; // Rút ngắn thời gian mô phỏng thực tế (mỗi phút ngoài đời = 12 giây mô phỏng, hoặc tùy chỉnh nhanh)
+            // Để trải nghiệm trực quan tốt khi demo, ta quy ước 1 phút trễ = 1 giây chạy đếm ngược, hoặc giả lập trực tiếp:
+            let displaySeconds = delayMinutes * 60; 
+
+            delayStatusText.innerText = `Đang truyền tín hiệu qua không gian (${delayMinutes} phút độ trễ)...`;
+            delayStatusText.className = "text-base font-bold text-amber-400 mt-1";
+
+            logConsole.innerHTML += `<br>[${new Date().toLocaleTimeString()}] Lệnh truyền đi từ Trạm kiểm soát Trái Đất (DSN)...`;
+            logConsole.scrollTop = logConsole.scrollHeight;
+
+            let countdown = delayMinutes; // Mô phỏng nhanh: đếm ngược theo số phút
+            const interval = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    delayStatusText.innerText = `Sóng đang bay... Còn lại ${countdown} phút nữa tới Sao Hỏa.`;
+                    logConsole.innerHTML += `<br>[${new Date().toLocaleTimeString()}] Tín hiệu đang vượt qua khoảng cách không gian... (${countdown} phút nữa đến nơi)`;
+                    logConsole.scrollTop = logConsole.scrollHeight;
+                } else {
+                    clearInterval(interval);
+                    delayStatusText.innerText = `Lệnh đã đến Sao Hỏa thành công! Chờ phản hồi...`;
+                    delayStatusText.className = "text-base font-bold text-emerald-400 mt-1";
+                    logConsole.innerHTML += `<br>[${new Date().toLocaleTimeString()}] 🎯 <strong>Thành công:</strong> Opportunity đã nhận lệnh, thực hiện chụp ảnh và gửi dữ liệu về lại Trái Đất (+${delayMinutes} phút chiều về).`;
+                    logConsole.scrollTop = logConsole.scrollHeight;
+
+                    setTimeout(() => {
+                        delayStatusText.innerText = `Đã nhận dữ liệu phản hồi hoàn tất!`;
+                        sendBtn.disabled = false;
+                        sendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }, 2000);
+                }
+            }, 1000); // 1 giây thực tế = 1 phút giả lập độ trễ giúp demo mượt mà không phải chờ đợi lâu
+        });
+    </script>
+</body>
+</html>
